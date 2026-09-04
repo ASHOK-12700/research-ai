@@ -1,0 +1,146 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-heading: 'Outfit', 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    /* Light Mode - Clean, Professional, Premium */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fb;
+    --bg-tertiary: #f0f2f7;
+    --bg-surface: #ffffff;
+    --bg-elevated: #fafbfd;
+    --bg-hover: #f0f2f7;
+    --bg-overlay: rgba(255, 255, 255, 0.95);
+
+    --border-subtle: rgba(30, 41, 59, 0.08);
+    --border-default: rgba(30, 41, 59, 0.15);
+    --border-strong: rgba(30, 41, 59, 0.22);
+    --border-accent: rgba(99, 102, 241, 0.4);
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+
+    --accent-primary: #6366f1;
+    --accent-secondary: #7c3aed;
+    --accent-tertiary: #8b5cf6;
+    --accent-warm: #f59e0b;
+    --accent-danger: #dc2626;
+    --accent-success: #059669;
+
+    --glass-light: rgba(255, 255, 255, 0.8);
+    --glass-lighter: rgba(255, 255, 255, 0.9);
+    --glass-medium: rgba(255, 255, 255, 0.95);
+
+    --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.08);
+    --shadow-md: 0 6px 16px rgba(15, 23, 42, 0.1);
+    --shadow-lg: 0 12px 28px rgba(15, 23, 42, 0.12);
+    --shadow-xl: 0 24px 52px rgba(15, 23, 42, 0.14);
+  }
+
+  html.dark {
+    --bg-primary: #040609;
+    --bg-secondary: #0a0e15;
+    --bg-tertiary: #121820;
+    --bg-surface: #0f131a;
+    --bg-elevated: #1a1f2e;
+    --bg-hover: #15192a;
+    --bg-overlay: rgba(4, 6, 9, 0.9);
+
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --border-default: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.15);
+    --border-accent: rgba(99, 102, 241, 0.35);
+
+    --text-primary: #f0f2f7;
+    --text-secondary: #b4b9c7;
+    --text-muted: #7d8599;
+
+    --accent-primary: #6366f1;
+    --accent-secondary: #8f7dff;
+    --accent-tertiary: #8b5cf6;
+    --accent-warm: #f59e0b;
+    --accent-danger: #f87171;
+    --accent-success: #34d399;
+
+    --glass-light: rgba(255, 255, 255, 0.04);
+    --glass-lighter: rgba(255, 255, 255, 0.07);
+    --glass-medium: rgba(255, 255, 255, 0.1);
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.32);
+    --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.45);
+    --shadow-xl: 0 24px 52px rgba(0, 0, 0, 0.5);
+  }
+
+  html {
+    background-color: var(--bg-primary);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text-primary) !important;
+    -webkit-box-shadow: 0 0 0px 1000px var(--bg-surface) inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+    caret-color: var(--text-primary);
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 9999px;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
