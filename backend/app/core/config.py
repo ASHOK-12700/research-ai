@@ -9,7 +9,9 @@ class Settings(BaseSettings):
     APP_NAME: str = Field(default="ResearchAI")
     APP_VERSION: str = Field(default="1.0.0")
     API_PREFIX: str = Field(default="/api")
-    FRONTEND_URL: str = Field(default="http://localhost:5173")
+    FRONTEND_URL: str = Field(
+        default="http://localhost:5173,https://researchai-app.vercel.app"
+    )
     ENVIRONMENT: str = Field(default="development")
     
     # AI/RAG Configuration
@@ -37,7 +39,14 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        return [origin.strip() for origin in self.FRONTEND_URL.split(",") if origin.strip()]
+        configured_origins = [
+            origin.strip() for origin in self.FRONTEND_URL.split(",") if origin.strip()
+        ]
+        return list(dict.fromkeys([
+            "http://localhost:5173",
+            "https://researchai-app.vercel.app",
+            *configured_origins,
+        ]))
 
 
 @lru_cache(maxsize=1)
