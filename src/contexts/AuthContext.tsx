@@ -15,6 +15,9 @@ export interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const authConfigurationError = new Error(
+  'Authentication is unavailable. Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in the deployment environment.'
+);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -24,6 +27,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Check for existing session on mount
     const initializeAuth = async () => {
+      if (!supabase) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data: { session: existingSession } } = await supabase.auth.getSession();
         setSession(existingSession);
@@ -38,6 +46,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
 
     // Subscribe to auth state changes
+    if (!supabase) {
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
@@ -50,6 +62,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signUp = async (email: string, password: string) => {
+    if (!supabase) {
+      return { user: null, error: authConfigurationError };
+    }
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -67,6 +83,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
+    if (!supabase) {
+      return { user: null, error: authConfigurationError };
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -84,6 +104,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithGoogle = async () => {
+    if (!supabase) {
+      return { error: authConfigurationError };
+    }
+
     try {
       const redirectTo = `${window.location.origin}/dashboard`;
       const { error } = await supabase.auth.signInWithOAuth({
@@ -104,6 +128,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    if (!supabase) {
+      return { error: authConfigurationError };
+    }
+
     try {
       const { error } = await supabase.auth.signOut();
       return { error };
@@ -113,6 +141,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const resetPassword = async (email: string) => {
+    if (!supabase) {
+      return { error: authConfigurationError };
+    }
+
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
@@ -124,6 +156,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updatePassword = async (newPassword: string) => {
+    if (!supabase) {
+      return { user: null, error: authConfigurationError };
+    }
+
     try {
       const { data, error } = await supabase.auth.updateUser({
         password: newPassword,

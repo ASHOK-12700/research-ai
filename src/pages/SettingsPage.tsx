@@ -36,6 +36,10 @@ export const SettingsPage: React.FC = () => {
         setProfile(null);
         return;
       }
+      if (!supabase) {
+        setProfile(null);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('profiles')

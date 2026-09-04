@@ -110,6 +110,10 @@ function mapBackendPaperToFrontendPaper(paper: BackendPaper): Paper {
 }
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
+  if (!supabase) {
+    return {};
+  }
+
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
   if (!token) {
