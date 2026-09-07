@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { CondensationBackground } from '../components/auth/CondensationBackground';
 import { Button } from '../components/ui/Button';
 
 export const SignupPage: React.FC = () => {
@@ -17,6 +16,7 @@ export const SignupPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
   const inputClassName =
     'w-full h-12 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/35 focus:border-[var(--accent-primary)] transition-all duration-200 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]';
@@ -66,6 +66,9 @@ export const SignupPage: React.FC = () => {
 
     if (user) {
       navigate('/dashboard', { replace: true });
+    } else {
+      setConfirmationSent(true);
+      setLoading(false);
     }
   };
 
@@ -88,7 +91,6 @@ export const SignupPage: React.FC = () => {
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] lg:flex">
       <div className="relative hidden min-h-screen w-full overflow-hidden lg:block lg:w-[48%]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(124,92,255,0.28),_transparent_30%),linear-gradient(135deg,#0b0d12_0%,#0d1117_40%,#07090d_100%)]" />
-        <CondensationBackground className="absolute inset-0 opacity-80" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,13,0.18),rgba(7,9,13,0.72))]" />
 
         <div className="relative z-10 flex h-full flex-col justify-between px-10 py-10 xl:px-16">
@@ -128,7 +130,6 @@ export const SignupPage: React.FC = () => {
 
       <div className="relative block h-32 w-full overflow-hidden bg-[var(--bg-primary)] lg:hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(124,92,255,0.26),_transparent_28%),linear-gradient(135deg,#0b0d12_0%,#0d1117_40%,#07090d_100%)]" />
-        <CondensationBackground className="absolute inset-0 opacity-80" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,13,0.1),rgba(7,9,13,0.52))]" />
       </div>
 
@@ -179,7 +180,17 @@ export const SignupPage: React.FC = () => {
               </motion.div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            {confirmationSent && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300"
+              >
+                Account created. Check your email to confirm your account, then log in.
+              </motion.div>
+            )}
+
+            {!confirmationSent && <form onSubmit={handleSubmit} className="space-y-5">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -279,7 +290,7 @@ export const SignupPage: React.FC = () => {
                   {loading ? 'Creating account...' : 'Create account'}
                 </Button>
               </motion.div>
-            </form>
+            </form>}
 
             <motion.div
               initial={{ opacity: 0 }}

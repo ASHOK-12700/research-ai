@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 md:px-6 bg-[var(--bg-overlay)] backdrop-blur-xl border-b border-[var(--border-subtle)] shadow-sm">
+    <header className="dashboard-header sticky top-0 z-20 flex items-center justify-between h-16 px-4 md:px-6 bg-[rgba(10,14,21,0.44)] backdrop-blur-xl border-b border-[var(--border-subtle)] shadow-sm">
       {/* Left: Mobile Menu & Search Trigger */}
       <div className="flex items-center gap-3">
         <button

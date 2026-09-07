@@ -9,7 +9,7 @@ import { Button } from '../components/ui/Button';
 export const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { updatePassword, loading: authLoading } = useAuth();
+  const { session, updatePassword, loading: authLoading } = useAuth();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -21,16 +21,19 @@ export const ResetPasswordPage: React.FC = () => {
   const [hasToken, setHasToken] = useState(false);
 
   useEffect(() => {
-    // Check if there's a valid session (Supabase sets the session when you visit the reset link)
-    const token = searchParams.get('token');
-    const type = searchParams.get('type');
+    // Supabase returns recovery credentials in the URL hash and creates a session.
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const type = searchParams.get('type') || hashParams.get('type');
+    const hasRecoveryToken = Boolean(searchParams.get('access_token') || hashParams.get('access_token'));
 
-    if (!token || type !== 'recovery') {
+    if (type !== 'recovery' || !hasRecoveryToken || !session) {
       setError('Invalid password reset link. Please request a new one.');
+      setHasToken(false);
     } else {
+      setError('');
       setHasToken(true);
     }
-  }, [searchParams]);
+  }, [searchParams, session]);
 
   const validateForm = (): boolean => {
     if (!password || !confirmPassword) {

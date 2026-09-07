@@ -97,7 +97,7 @@ export const DashboardPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.08, duration: 0.5 }}
               >
-                <Card className="group relative overflow-hidden">
+                <Card variant="glass" className="dashboard-glass group relative overflow-hidden">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-[#b4b9c7]">{st.label}</span>
@@ -154,7 +154,7 @@ export const DashboardPage: React.FC = () => {
                   onClick={() => navigate(`/projects/${proj.id}`)}
                   className="cursor-pointer group"
                 >
-                  <Card className="flex flex-col justify-between h-full">
+                  <Card variant="glass" className="dashboard-glass flex flex-col justify-between h-full">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <Badge variant="indigo">{proj.topic}</Badge>
@@ -196,7 +196,7 @@ export const DashboardPage: React.FC = () => {
             </h2>
             <p className="text-sm text-[#7d8599]">Recent changes</p>
           </div>
-          <Card className="h-full min-h-96">
+          <Card variant="glass" className="dashboard-glass h-full min-h-96">
             <ActivityTimeline events={mockTimelineEvents} />
           </Card>
         </div>
@@ -219,7 +219,7 @@ export const DashboardPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.1 }}
               >
-                <Card className="h-full flex flex-col justify-between group relative overflow-hidden">
+                <Card variant="glass" className="dashboard-glass h-full flex flex-col justify-between group relative overflow-hidden">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="px-2.5 py-1 text-[10px] uppercase font-mono font-bold text-indigo-300 bg-indigo-500/20 rounded-full">

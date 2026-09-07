@@ -1,0 +1,29 @@
+.dashboard-shell > .relative.z-10 {
+  isolation: isolate;
+}
+
+.dashboard-shell > .absolute {
+  position: fixed;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.dashboard-shell .dashboard-glass {
+  background: rgba(15, 19, 26, 0.48) !important;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.dashboard-shell main {
+  background: rgba(4, 6, 9, 0.2);
+}
+
+.dashboard-shell .bg-\[var\(--bg-surface\)\] {
+  background: rgba(15, 19, 26, 0.42) !important;
+}
+
+.dashboard-shell .bg-\[var\(--bg-elevated\)\]\/60 {
+  background: rgba(26, 31, 46, 0.42) !important;
+}

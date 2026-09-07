@@ -29,7 +29,7 @@ export const App: React.FC = () => {
           <Route path="/login" element={<AuthRedirect><LoginPage /></AuthRedirect>} />
           <Route path="/signup" element={<AuthRedirect><SignupPage /></AuthRedirect>} />
           <Route path="/forgot-password" element={<AuthRedirect><ForgotPasswordPage /></AuthRedirect>} />
-          <Route path="/reset-password" element={<AuthRedirect><ResetPasswordPage /></AuthRedirect>} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected Routes */}
           <Route

@@ -8,8 +8,11 @@ import { DragAndDropUploadModal } from '../upload/DragAndDropUploadModal';
 import { RightEvidenceDrawer } from './RightEvidenceDrawer';
 import { ToastContainer } from '../ui/ToastContainer';
 import { ResearchAICopilot } from '../ui/ResearchAICopilot';
+import { CondensationBackground } from '../../shaders/condensation/CondensationBackground';
 import { useToast } from '../../hooks/useToast';
 import type { SourceReference } from '../../types';
+import '../../shaders/threeui.css';
+import '../../shaders/condensation/glass-effects.css';
 
 export const AppLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -28,31 +31,43 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden font-sans">
-      {/* Desktop Sidebar */}
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        onOpenUpload={() => setUploadOpen(true)}
-      />
+    <div className="dashboard-shell relative flex h-screen overflow-hidden bg-[var(--bg-primary)] font-sans text-[var(--text-primary)]">
+      {/* Full-screen Condensation Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <CondensationBackground
+          speed={1.00}
+          dropAmount={1.00}
+          opacity={1.00}
+        />
+      </div>
 
-      {/* Mobile Navigation Drawer */}
-      <MobileDrawer
-        isOpen={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-      />
-
-      {/* Main Content Body */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header
-          onOpenSearch={() => setSearchOpen(true)}
+      {/* Content with relative positioning to stack above background */}
+      <div className="relative z-10 flex h-full w-full">
+        {/* Desktop Sidebar */}
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
           onOpenUpload={() => setUploadOpen(true)}
-          onOpenMobileMenu={() => setMobileMenuOpen(true)}
         />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-[var(--bg-primary)] scrollbar-thin scrollbar-thumb-[var(--border-default)] scrollbar-track-transparent">
-            <Outlet context={{ onOpenUpload: () => setUploadOpen(true), onOpenEvidence: handleOpenEvidence, addToast, papersRefreshToken }} />
-        </main>
+        {/* Mobile Navigation Drawer */}
+        <MobileDrawer
+          isOpen={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+        />
+
+        {/* Main Content Body */}
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[rgba(11,13,20,0.32)] backdrop-blur-[1px]">
+          <Header
+            onOpenSearch={() => setSearchOpen(true)}
+            onOpenUpload={() => setUploadOpen(true)}
+            onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          />
+
+          <main className="scrollbar-thin scrollbar-thumb-[var(--border-default)] scrollbar-track-transparent flex-1 overflow-y-auto bg-[rgba(11,13,20,0.24)] p-4 sm:p-6 md:p-8">
+              <Outlet context={{ onOpenUpload: () => setUploadOpen(true), onOpenEvidence: handleOpenEvidence, addToast, papersRefreshToken }} />
+          </main>
+        </div>
       </div>
 
       {/* Global Modals & Drawers */}
