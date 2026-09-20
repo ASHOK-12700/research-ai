@@ -23,6 +23,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
   const navItems = [
     { label: 'Overview', icon: LayoutDashboard, path: '/dashboard' },
     { label: 'My Research', icon: FolderKanban, path: '/projects' },
+    { label: 'Folders', icon: FolderKanban, path: '/folders' },
     { label: 'Papers', icon: FileText, path: '/papers' },
     { label: 'Compare', icon: GitCompare, path: '/compare' },
     { label: 'Ask Papers', icon: MessageSquareQuote, path: '/ask' },
@@ -93,8 +94,8 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
                   AR
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-zinc-200">Dr. Alex Rivera</div>
-                  <div className="text-[10px] text-zinc-500">Senior AI Researcher</div>
+                  <div className="text-xs font-semibold text-zinc-200">Your account</div>
+                  <div className="text-[10px] text-zinc-500">Research workspace</div>
                 </div>
               </div>
             </div>

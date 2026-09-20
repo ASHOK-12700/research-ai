@@ -32,6 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   const navItems = [
     { label: 'Overview', icon: LayoutDashboard, path: '/dashboard' },
     { label: 'My Research', icon: FolderKanban, path: '/projects' },
+    { label: 'Folders', icon: FolderKanban, path: '/folders' },
     { label: 'Papers', icon: FileText, path: '/papers' },
     { label: 'Compare', icon: GitCompare, path: '/compare' },
     { label: 'Ask Papers', icon: MessageSquareQuote, path: '/ask' },
@@ -131,11 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         </NavLink>
 
         <a
-          href="#help"
-          onClick={(e) => {
-            e.preventDefault();
-            alert('ResearchAI Help & Documentation: Contact support@researchai.io');
-          }}
+          href="/help"
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all duration-200"
           title={collapsed ? 'Help & Support' : undefined}
         >

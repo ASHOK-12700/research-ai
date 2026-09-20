@@ -20,6 +20,16 @@ export interface ResearchProject {
   progress: number; // 0 to 100
 }
 
+export interface ResearchFolder {
+  id: string;
+  name: string;
+  description: string;
+  paperIds: string[];
+  paperCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PaperSection {
   id: string;
   title: string;

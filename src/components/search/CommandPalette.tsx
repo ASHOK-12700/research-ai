@@ -5,7 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { paperService } from '../../services/paperService';
 import { projectService } from '../../services/projectService';
+import { folderService } from '../../services/folderService';
 import type { Paper } from '../../types';
+import type { ResearchFolder } from '../../types';
 
 export interface CommandPaletteProps {
   isOpen: boolean;
@@ -18,6 +20,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
   const { user } = useAuth();
   const [papers, setPapers] = useState<Paper[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+  const [folders, setFolders] = useState<ResearchFolder[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -40,10 +43,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
       setLoading(true);
       Promise.all([
         paperService.getPapers().catch(() => []),
-        projectService.getProjects().catch(() => [])
-      ]).then(([loadedPapers, loadedProjects]) => {
+        projectService.getProjects().catch(() => []),
+        folderService.getFolders().catch(() => [])
+      ]).then(([loadedPapers, loadedProjects, loadedFolders]) => {
         setPapers(loadedPapers || []);
         setProjects(loadedProjects || []);
+        setFolders(loadedFolders || []);
         setLoading(false);
       });
     }
@@ -61,6 +66,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
     p.title.toLowerCase().includes(query.toLowerCase()) ||
     p.topic.toLowerCase().includes(query.toLowerCase())
   );
+  const filteredFolders = folders.filter((folder) => folder.name.toLowerCase().includes(query.toLowerCase()) || folder.description.toLowerCase().includes(query.toLowerCase()));
 
   const handleSelect = (path: string) => {
     navigate(path);
@@ -161,6 +167,19 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
               </div>
             )}
 
+            {!loading && filteredFolders.length > 0 && (
+              <div>
+                <div className="px-3 py-1 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Folders</div>
+                <div className="space-y-1 mt-1">
+                  {filteredFolders.map((folder) => (
+                    <button key={folder.id} onClick={() => handleSelect(`/folders/${folder.id}`)} className="w-full flex items-center justify-between p-2.5 rounded-lg text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors text-left cursor-pointer">
+                      <div className="flex items-center gap-3 truncate"><FolderKanban className="w-4 h-4 text-emerald-400 shrink-0" /><span className="truncate">{folder.name}</span></div><span className="text-xs text-zinc-500 shrink-0">{folder.paperCount} papers</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Papers Results */}
             {!loading && filteredPapers.length > 0 && (
               <div>
@@ -188,7 +207,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
             )}
 
             {/* Empty State */}
-            {!loading && query !== '' && filteredPapers.length === 0 && filteredProjects.length === 0 && (
+            {!loading && query !== '' && filteredPapers.length === 0 && filteredProjects.length === 0 && filteredFolders.length === 0 && (
               <div className="p-8 text-center text-sm text-zinc-500">
                 {!user ? (
                   <div className="space-y-2">

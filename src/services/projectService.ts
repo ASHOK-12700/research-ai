@@ -1,9 +1,10 @@
 import type { ResearchProject } from '../types';
 import { buildApiUrl } from './apiClient';
+import { getSupabaseAuthToken } from './authToken';
 
 export const projectService = {
   async getProjects(): Promise<ResearchProject[]> {
-    const token = localStorage.getItem('supabase.auth.token');
+    const token = await getSupabaseAuthToken();
     const url = buildApiUrl('/projects/');
     
     try {
@@ -39,7 +40,7 @@ export const projectService = {
   },
 
   async getProjectById(id: string): Promise<ResearchProject | null> {
-    const token = localStorage.getItem('supabase.auth.token');
+    const token = await getSupabaseAuthToken();
     const url = buildApiUrl(`/projects/${id}`);
     
     try {
@@ -73,7 +74,7 @@ export const projectService = {
   },
 
   async createProject(data: { title: string; topic: string; description: string }): Promise<ResearchProject | null> {
-    const token = localStorage.getItem('supabase.auth.token');
+    const token = await getSupabaseAuthToken();
     const url = buildApiUrl('/projects/');
     
     try {
@@ -116,7 +117,7 @@ export const projectService = {
   },
 
   async updateProject(id: string, updates: Partial<ResearchProject>): Promise<ResearchProject | null> {
-    const token = localStorage.getItem('supabase.auth.token');
+    const token = await getSupabaseAuthToken();
     const url = buildApiUrl(`/projects/${id}`);
     
     try {
@@ -160,7 +161,7 @@ export const projectService = {
   },
 
   async deleteProject(id: string): Promise<boolean> {
-    const token = localStorage.getItem('supabase.auth.token');
+    const token = await getSupabaseAuthToken();
     const url = buildApiUrl(`/projects/${id}`);
     
     try {

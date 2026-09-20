@@ -65,6 +65,7 @@ async def query_papers(request: Request, query_data: RAGQuery) -> RAGResponse:
         response = rag_service.query(
             query=query_data.query,
             user_id=user_id,
+            folder_id=query_data.folder_id,
             temperature=query_data.temperature,
             reasoning_depth=query_data.reasoning_depth,
         )

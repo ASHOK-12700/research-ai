@@ -7,6 +7,7 @@ from app.api.routes.projects import router as projects_router
 from app.api.routes.rag import router as rag_router
 from app.api.routes.chatbot import router as chatbot_router
 from app.api.routes.preferences import router as preferences_router
+from app.api.routes.folders import router as folders_router
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -27,6 +28,7 @@ app.include_router(projects_router, prefix=settings.API_PREFIX)
 app.include_router(rag_router, prefix=settings.API_PREFIX)
 app.include_router(chatbot_router, prefix=settings.API_PREFIX)
 app.include_router(preferences_router, prefix=settings.API_PREFIX)
+app.include_router(folders_router, prefix=settings.API_PREFIX)
 
 
 @app.get("/", tags=["Root"])

@@ -125,3 +125,31 @@ def test_user_specific_paper_queries_do_not_overlap(monkeypatch):
     query = _FakeQuery(rows=[])
     monkeypatch.setattr('app.services.paper_repository.supabase_service.table', lambda *_args, **_kwargs: query)
     assert repo.get('paper-a', user_id='user-b') is None
+
+
+def test_rag_service_scopes_queries_to_selected_folder(monkeypatch):
+    calls = {}
+
+    def fake_list(*, user_id=None, project_id=None, folder_id=None, **kwargs):
+        calls['user_id'] = user_id
+        calls['project_id'] = project_id
+        calls['folder_id'] = folder_id
+        return [
+            SimpleNamespace(
+                id='paper-1',
+                title='Alpha',
+                sections=[SimpleNamespace(title='Methods', content='Model training pipeline', page_start=4)],
+            )
+        ]
+
+    monkeypatch.setattr('app.services.rag_service.paper_repository.list', fake_list)
+    result = __import__('app.services.rag_service', fromlist=['rag_service']).rag_service._retrieve_relevant_sections(
+        'training pipeline',
+        'user-a',
+        folder_id='folder-7',
+    )
+
+    assert result
+    assert calls['user_id'] == 'user-a'
+    assert calls['project_id'] == 'folder-7'
+    assert calls['folder_id'] == 'folder-7'

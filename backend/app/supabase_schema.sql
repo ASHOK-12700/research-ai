@@ -41,6 +41,24 @@ create table if not exists public.projects (
     updated_at timestamptz not null default now()
 );
 
+create table if not exists public.folders (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references auth.users(id) on delete cascade,
+    name text not null check (char_length(trim(name)) between 1 and 255),
+    description text not null default '',
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    unique (user_id, name)
+);
+
+create table if not exists public.folder_papers (
+    folder_id uuid not null references public.folders(id) on delete cascade,
+    paper_id text not null references public.papers(id) on delete cascade,
+    user_id uuid not null references auth.users(id) on delete cascade,
+    added_at timestamptz not null default now(),
+    primary key (folder_id, paper_id)
+);
+
 alter table public.papers add column if not exists user_id uuid references auth.users(id) on delete cascade;
 
 -- Existing paper rows are intentionally left nullable to avoid breaking historical data.
@@ -74,6 +92,10 @@ create index if not exists idx_summaries_paper_id on public.summaries(paper_id);
 create index if not exists idx_profiles_email on public.profiles(email);
 create index if not exists idx_projects_user_id on public.projects(user_id);
 create index if not exists idx_projects_created_at on public.projects(created_at desc);
+create index if not exists idx_folders_user_id on public.folders(user_id);
+create index if not exists idx_folders_updated_at on public.folders(updated_at desc);
+create index if not exists idx_folder_papers_paper_id on public.folder_papers(paper_id);
+create index if not exists idx_folder_papers_user_id on public.folder_papers(user_id);
 
 create or replace function public.set_updated_at()
 returns trigger as $$
@@ -95,6 +117,11 @@ execute function public.set_updated_at();
 
 create trigger projects_set_updated_at
 before update on public.projects
+for each row
+execute function public.set_updated_at();
+
+create trigger folders_set_updated_at
+before update on public.folders
 for each row
 execute function public.set_updated_at();
 
@@ -176,6 +203,39 @@ create policy "Projects delete only by owner"
 on public.projects for delete
 using (auth.uid() = user_id);
 
+create policy "Folders visible only to owner"
+on public.folders for select
+using (auth.uid() = user_id);
+
+create policy "Folders insert only for owner"
+on public.folders for insert
+with check (auth.uid() = user_id);
+
+create policy "Folders update only by owner"
+on public.folders for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "Folders delete only by owner"
+on public.folders for delete
+using (auth.uid() = user_id);
+
+create policy "Folder papers visible only to owner"
+on public.folder_papers for select
+using (auth.uid() = user_id);
+
+create policy "Folder papers insert only for owner"
+on public.folder_papers for insert
+with check (
+    auth.uid() = user_id
+    and exists (select 1 from public.folders f where f.id = folder_id and f.user_id = auth.uid())
+    and exists (select 1 from public.papers p where p.id = paper_id and p.user_id = auth.uid())
+);
+
+create policy "Folder papers delete only by owner"
+on public.folder_papers for delete
+using (auth.uid() = user_id);
+
 create policy "Allow authenticated read access to summaries"
 on public.summaries for select
 using (auth.role() = 'authenticated');
@@ -196,6 +256,10 @@ insert into storage.buckets (id, name, public)
 values ('research-papers', 'research-papers', false)
 on conflict (id) do nothing;
 
+insert into storage.buckets (id, name, public)
+values ('profile-images', 'profile-images', false)
+on conflict (id) do nothing;
+
 create policy "research-papers-read-authenticated"
 on storage.objects for select
 using (bucket_id = 'research-papers' and auth.role() = 'authenticated');
@@ -212,3 +276,20 @@ with check (bucket_id = 'research-papers' and auth.role() = 'authenticated');
 create policy "research-papers-delete-authenticated"
 on storage.objects for delete
 using (bucket_id = 'research-papers' and auth.role() = 'authenticated');
+
+create policy "profile-images-read-owner"
+on storage.objects for select
+using (bucket_id = 'profile-images' and auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "profile-images-insert-owner"
+on storage.objects for insert
+with check (bucket_id = 'profile-images' and auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "profile-images-update-owner"
+on storage.objects for update
+using (bucket_id = 'profile-images' and auth.uid()::text = (storage.foldername(name))[1])
+with check (bucket_id = 'profile-images' and auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "profile-images-delete-owner"
+on storage.objects for delete
+using (bucket_id = 'profile-images' and auth.uid()::text = (storage.foldername(name))[1]);

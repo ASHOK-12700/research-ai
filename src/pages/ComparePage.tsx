@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   GitCompare,
@@ -9,13 +8,9 @@ import {
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { paperService } from '../services/paperService';
-import type { Paper, SourceReference } from '../types';
+import type { Paper } from '../types';
 
 export const ComparePage: React.FC = () => {
-  const { onOpenEvidence } = useOutletContext<{
-    onOpenEvidence: (source: SourceReference) => void;
-  }>();
-
   const [allPapers, setAllPapers] = useState<Paper[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,9 +18,7 @@ export const ComparePage: React.FC = () => {
   useEffect(() => {
     paperService.getPapers().then((data) => {
       setAllPapers(data);
-      if (data.length >= 2) {
-        setSelectedIds([data[0].id, data[1].id, data[2]?.id].filter(Boolean) as string[]);
-      }
+      setSelectedIds([]);
       setLoading(false);
     });
   }, []);
@@ -43,14 +36,12 @@ export const ComparePage: React.FC = () => {
   };
 
   const rows = [
-    { label: 'Research Problem', key: 'problem' },
-    { label: 'Proposed Methodology', key: 'methodology' },
-    { label: 'Dataset & Samples', key: 'dataset' },
-    { label: 'Algorithms / Architecture', key: 'algorithms' },
-    { label: 'Best Reported Result', key: 'keyResults' },
-    { label: 'Primary Limitations', key: 'limitations' },
-    { label: 'Future Work', key: 'futureWork' }
-  ];
+    { label: 'Abstract', key: 'abstract' },
+    { label: 'Tags', key: 'tags' },
+    { label: 'Journal / Venue', key: 'journal' },
+    { label: 'Authors', key: 'authors' },
+    { label: 'Year', key: 'year' },
+  ] as const;
 
   return (
     <motion.div
@@ -163,76 +154,25 @@ export const ComparePage: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Comparative Insights */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="space-y-6"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-indigo-600/20 border border-indigo-500/30">
-            <Sparkles className="w-5 h-5 text-indigo-400" />
+      {selectedPapers.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="space-y-6"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-indigo-600/20 border border-indigo-500/30">
+              <Sparkles className="w-5 h-5 text-indigo-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-[#f0f2f7] font-heading">Comparison Notes</h2>
           </div>
-          <h2 className="text-2xl font-bold text-[#f0f2f7] font-heading">Comparative Insights</h2>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              title: 'Highest Accuracy',
-              desc: 'Swin-MedNet reports the highest segmentation accuracy (89.4% DSC) among selected papers.',
-              paperId: 'paper-2',
-              paperTitle: 'An Attention-Free Swin Transformer for Medical Image Segmentation',
-              page: 6
-            },
-            {
-              title: 'Smallest Parameters',
-              desc: 'MobileNetV4 achieves ultra-low latency with only 3.8ms on NPU hardware.',
-              paperId: 'paper-3',
-              paperTitle: 'MobileNetV4: Ultra-Efficient Neural Networks for Edge Devices',
-              page: 7
-            },
-            {
-              title: 'Universal Limitation',
-              desc: 'All papers cite limited multi-site clinical validation and small dataset sizes as bottlenecks.',
-              paperId: 'paper-1',
-              paperTitle: 'Deep Residual Learning for Image Recognition',
-              page: 8
-            }
-          ].map((insight, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: idx * 0.08 }}
-            >
-              <Card className="space-y-3 h-full hover:border-indigo-500/50 transition-colors">
-                <span className="text-xs font-mono text-indigo-400 font-bold uppercase">Insight #{idx + 1}</span>
-                <h4 className="font-bold text-base text-[#f0f2f7]">{insight.title}</h4>
-                <p className="text-sm text-[#b4b9c7] leading-relaxed">{insight.desc}</p>
-                <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-indigo-400 font-mono">
-                  <span>p.{insight.page}</span>
-                  <button
-                    onClick={() =>
-                      onOpenEvidence({
-                        paperId: insight.paperId,
-                        paperTitle: insight.paperTitle,
-                        page: insight.page,
-                        section: 'Results',
-                        snippet: insight.desc
-                      })
-                    }
-                    className="hover:text-indigo-300 transition-colors"
-                  >
-                    View →
-                  </button>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
+          <Card className="p-4 text-sm text-[#b4b9c7]">
+            Comparison fields are derived from the actual uploaded papers in your current library. If a paper lacks a section, it is shown as “Not available in this paper.”
+          </Card>
+        </motion.div>
+      )}
     </motion.div>
   );
 };

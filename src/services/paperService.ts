@@ -33,44 +33,6 @@ const backendHeaders = {
   Accept: 'application/json'
 };
 
-const UPLOADED_PAPERS_STORAGE_KEY = 'research_ai_uploaded_papers_v1';
-
-const readStoredUploadedPapers = (): Paper[] => {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
-  try {
-    const raw = window.localStorage.getItem(UPLOADED_PAPERS_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed.filter((paper): paper is Paper => !!paper && typeof paper === 'object' && 'id' in paper) : [];
-  } catch {
-    return [];
-  }
-};
-
-const writeStoredUploadedPapers = (papers: Paper[]) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(UPLOADED_PAPERS_STORAGE_KEY, JSON.stringify(papers));
-  } catch {
-    // Ignore storage write failures so the upload flow continues without breaking the UI.
-  }
-};
-
-const localUploadedPapers: Paper[] = readStoredUploadedPapers();
-
-function persistUploadedPapers() {
-  writeStoredUploadedPapers(localUploadedPapers);
-}
-
 function mapBackendPaperToFrontendPaper(paper: BackendPaper): Paper {
   const authors = paper.metadata.authors && paper.metadata.authors.length > 0
     ? paper.metadata.authors
@@ -211,11 +173,7 @@ export const paperService = {
     }
 
     const backendPaper = (await response.json()) as BackendPaper;
-    const uploadedPaper = mapBackendPaperToFrontendPaper(backendPaper);
-    const deduped = [uploadedPaper, ...localUploadedPapers.filter((paper) => paper.id !== uploadedPaper.id)];
-    localUploadedPapers.splice(0, localUploadedPapers.length, ...deduped);
-    persistUploadedPapers();
-    return uploadedPaper;
+    return mapBackendPaperToFrontendPaper(backendPaper);
   },
 
   async getRelatedPapers(paperId: string): Promise<{ paper: Paper; similarity: number; reason: string }[]> {
@@ -228,8 +186,8 @@ export const paperService = {
         .filter((paper) => paper.id !== paperId)
         .map((paper) => ({
           paper,
-          similarity: paper.similarityScore || 84,
-          reason: paper.similarityReason || 'Shared architectural domain and methodology.'
+          similarity: paper.similarityScore,
+          reason: paper.similarityReason || 'Similarity is not available until paper analysis is generated.'
         }))
         .slice(0, 3);
     } catch {

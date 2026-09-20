@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 class RAGQuery(BaseModel):
     """Request for RAG query over user's papers."""
     query: str = Field(..., min_length=1, max_length=1000)
+    folder_id: str | None = Field(default=None, max_length=255)
     temperature: float = Field(default=0.2, ge=0.0, le=1.0)
     reasoning_depth: str = Field(
         default="Standard Analysis",

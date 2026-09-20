@@ -64,7 +64,7 @@ export const SignupPage: React.FC = () => {
       return;
     }
 
-    if (user) {
+    if (user?.email_confirmed_at) {
       navigate('/dashboard', { replace: true });
     } else {
       setConfirmationSent(true);

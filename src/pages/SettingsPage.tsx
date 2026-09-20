@@ -21,6 +21,9 @@ export const SettingsPage: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'ai' | 'citations' | 'about'>('ai');
   const [profile, setProfile] = useState<{ full_name?: string | null; email?: string | null; avatar_url?: string | null } | null>(null);
+  const [fullName, setFullName] = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
 
   // AI Preferences
   const [aiModel, setAiModel] = useState('meta/llama-3.2-3b-instruct');
@@ -49,6 +52,7 @@ export const SettingsPage: React.FC = () => {
 
       if (!error) {
         setProfile(data);
+        setFullName(data?.full_name || '');
       }
     };
 
@@ -77,6 +81,31 @@ export const SettingsPage: React.FC = () => {
     fetchProfile();
     fetchPreferences();
   }, [user?.id]);
+
+  const saveProfile = async () => {
+    if (!supabase || !user?.id) return;
+    setProfileSaving(true);
+    setProfileMessage(null);
+    const { data, error } = await supabase.from('profiles').upsert({ id: user.id, full_name: fullName.trim(), email: user.email }).select('full_name, email, avatar_url').single();
+    if (error) setProfileMessage(error.message);
+    else { setProfile(data); setProfileMessage('Profile saved.'); }
+    setProfileSaving(false);
+  };
+
+  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!supabase || !user?.id || !file) return;
+    if (!file.type.startsWith('image/')) { setProfileMessage('Choose an image file.'); return; }
+    setProfileSaving(true);
+    const path = `${user.id}/avatar-${Date.now()}.${file.name.split('.').pop() || 'jpg'}`;
+    const upload = await supabase.storage.from('profile-images').upload(path, file, { upsert: true, contentType: file.type });
+    if (upload.error) { setProfileMessage(upload.error.message); setProfileSaving(false); return; }
+    const { data: publicUrl } = supabase.storage.from('profile-images').getPublicUrl(path);
+    const { data, error } = await supabase.from('profiles').upsert({ id: user.id, full_name: fullName.trim(), email: user.email, avatar_url: publicUrl.publicUrl }).select('full_name, email, avatar_url').single();
+    setProfileMessage(error?.message || 'Profile image uploaded.');
+    if (data) setProfile(data);
+    setProfileSaving(false);
+  };
 
   const handleSave = async () => {
     if (!user?.id) return;
@@ -249,7 +278,7 @@ export const SettingsPage: React.FC = () => {
             <Card className="space-y-4 p-6">
               <h3 className="text-base font-bold text-zinc-100 font-heading">Researcher Profile</h3>
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-xl text-white shadow-xl">
+                {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-16 h-16 rounded-full object-cover" /> : <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-xl text-white shadow-xl">
                   {profile?.full_name
                     ? profile.full_name
                         .split(' ')
@@ -259,13 +288,16 @@ export const SettingsPage: React.FC = () => {
                     : (user?.email ?? 'R')
                         .slice(0, 2)
                         .toUpperCase()}
-                </div>
+                </div>}
                 <div>
                   <h4 className="font-bold text-zinc-100">{profile?.full_name || 'Researcher'}</h4>
                   <p className="text-xs text-zinc-400">{profile?.email || user?.email || 'No profile data yet'}</p>
                   <span className="text-[10px] font-mono text-indigo-400">{user?.id ? 'Supabase profile' : 'Not signed in'}</span>
                 </div>
               </div>
+              <label className="block text-xs text-zinc-400">Full name<input value={fullName} onChange={(event) => setFullName(event.target.value)} className="mt-1 w-full px-3 py-2 bg-zinc-900 border border-white/10 rounded-lg text-sm text-white" /></label>
+              <div className="flex flex-wrap gap-3"><Button onClick={saveProfile} disabled={profileSaving}>{profileSaving ? 'Saving...' : 'Save profile'}</Button><label className="inline-flex items-center px-4 py-2 rounded-lg border border-white/10 text-sm text-zinc-200 cursor-pointer">Upload image<input type="file" accept="image/*" className="hidden" onChange={uploadAvatar} /></label></div>
+              {profileMessage && <p className="text-xs text-zinc-400">{profileMessage}</p>}
             </Card>
           )}
 

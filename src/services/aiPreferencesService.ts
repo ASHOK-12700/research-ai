@@ -1,4 +1,5 @@
 import { buildApiUrl } from './apiClient';
+import { getSupabaseAuthToken } from './authToken';
 
 export interface AIPreferences {
   user_id: string;
@@ -9,7 +10,7 @@ export interface AIPreferences {
 
 export const aiPreferencesService = {
   async getPreferences(_userId: string): Promise<AIPreferences> {
-    const token = localStorage.getItem('supabase.auth.token');
+    const token = await getSupabaseAuthToken();
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -33,7 +34,7 @@ export const aiPreferencesService = {
   },
 
   async savePreferences(preferences: AIPreferences): Promise<AIPreferences> {
-    const token = localStorage.getItem('supabase.auth.token');
+    const token = await getSupabaseAuthToken();
     if (!token) {
       throw new Error('Not authenticated');
     }

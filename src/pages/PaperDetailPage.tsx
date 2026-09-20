@@ -100,6 +100,32 @@ export const PaperDetailPage: React.FC = () => {
     { key: 'key_takeaways', label: 'Key Takeaways' }
   ] as const;
 
+  const renderStructuredText = (value: string) => {
+    const cleaned = (value || '').trim();
+    if (!cleaned) {
+      return <p className="text-sm text-zinc-400">Not available in this paper.</p>;
+    }
+
+    const lines = cleaned
+      .split(/(?<=[.!?])\s+(?=[A-Z0-9\-])/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (lines.length <= 1) {
+      return <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{cleaned}</p>;
+    }
+
+    return (
+      <ul className="space-y-2 text-sm text-zinc-300 leading-relaxed">
+        {lines.map((line, index) => (
+          <li key={`${line}-${index}`} className="list-disc ml-5">
+            {line}
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
   if (loading) {
     return (
       <div className="space-y-6 max-w-7xl mx-auto p-4">
@@ -245,7 +271,7 @@ export const PaperDetailPage: React.FC = () => {
                     <h3 className="text-base font-bold text-indigo-400 font-heading">{sec.title}</h3>
                     <span className="text-[10px] font-mono text-zinc-500">Page {sec.pageNumber}</span>
                   </div>
-                  <p className="text-sm text-zinc-300 leading-relaxed font-sans">{sec.content}</p>
+                  {renderStructuredText(sec.content)}
                 </div>
               ))}
             </div>

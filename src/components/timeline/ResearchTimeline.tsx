@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sparkles, Calendar, Layers } from 'lucide-react';
 import { Card } from '../ui/Card';
+import type { Paper } from '../../types';
 
 export interface TimelineMilestone {
   year: number;
@@ -10,52 +11,15 @@ export interface TimelineMilestone {
   keyPapers: string[];
 }
 
-export const researchMilestones: TimelineMilestone[] = [
-  {
-    year: 2021,
-    title: 'Standard 2D Convolutional Networks',
-    methodology: 'CNN / VGG-16 / ResNet-50',
-    description: 'Initial deep learning adoption focused on 2D slice-by-slice slice classification using pre-trained ImageNet convolutional networks.',
-    keyPapers: ['ResNet-50 Baseline']
-  },
-  {
-    year: 2022,
-    title: 'Residual & Skip-Connection Expansion',
-    methodology: 'Deep ResNet-152 & U-Net 2D',
-    description: 'Introduction of deeper residual identity shortcuts and encoder-decoder skip connections to preserve spatial boundary details.',
-    keyPapers: ['Deep Residual Learning for Image Recognition']
-  },
-  {
-    year: 2023,
-    title: 'Efficient Edge & Mobile Architectures',
-    methodology: 'MobileNetV3 / EfficientNet',
-    description: 'Focus on depthwise separable convolutions to reduce model latency for clinical point-of-care embedded deployment.',
-    keyPapers: ['MobileNetV4: Ultra-Efficient Neural Networks']
-  },
-  {
-    year: 2024,
-    title: 'Shifted Window Vision Transformers',
-    methodology: 'Swin Transformer / TransUNet',
-    description: 'Breakthrough integration of localized self-attention windows with linear spatial token mixing for 3D CT/MRI volumetric scans.',
-    keyPapers: ['An Attention-Free Swin Transformer for Medical Image Segmentation']
-  },
-  {
-    year: 2025,
-    title: 'Hybrid State-Space & LLM Guidance',
-    methodology: 'Mamba (SSMs) + Multimodal LLMs',
-    description: 'Emerging synthesis of selective state-space sequence modeling with zero-shot multimodal generative educational and diagnostic feedback.',
-    keyPapers: ['Evaluating LLM-Generated Feedback']
-  }
-];
-
-export const ResearchTimeline: React.FC = () => {
+export const ResearchTimeline: React.FC<{ papers: Paper[] }> = ({ papers }) => {
+  const milestones = papers.map((paper) => ({ year: paper.year, title: paper.title, methodology: paper.sections?.find((section) => /method|approach|model/i.test(section.title))?.title || 'Extracted sections', description: paper.abstract, keyPapers: [paper.title] }));
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-zinc-100 flex items-center gap-2">
             <Layers className="w-5 h-5 text-indigo-400" />
-            Literature Evolution Timeline (2021 – 2025)
+            Literature Evolution Timeline
           </h3>
           <p className="text-xs text-zinc-400 mt-1">
             Visualizing how dominant methodologies and architectures evolved across your uploaded collection.
@@ -64,7 +28,7 @@ export const ResearchTimeline: React.FC = () => {
       </div>
 
       <div className="relative border-l-2 border-indigo-500/30 ml-4 pl-6 space-y-8">
-        {researchMilestones.map((m) => (
+        {milestones.map((m) => (
           <div key={m.year} className="relative group">
             {/* Timeline Dot */}
             <div className="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-indigo-600 border-4 border-[#0c0e16] group-hover:scale-125 transition-transform" />
@@ -96,6 +60,7 @@ export const ResearchTimeline: React.FC = () => {
             </Card>
           </div>
         ))}
+        {!milestones.length && <p className="text-sm text-zinc-400">Upload papers to build a timeline from your collection.</p>}
       </div>
     </div>
   );

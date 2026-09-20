@@ -88,12 +88,18 @@ class SupabasePaperRepository:
         row = (response.data or [{}])[0]
         return self._row_to_paper(row or payload)
 
-    def list(self, project_id: str | None = None, user_id: str | None = None) -> list[StoredPaper]:
+    def list(
+        self,
+        project_id: str | None = None,
+        user_id: str | None = None,
+        folder_id: str | None = None,
+    ) -> list[StoredPaper]:
         query = supabase_service.table(self._table).select("*")
         if user_id:
             query = query.eq("user_id", user_id)
-        if project_id:
-            query = query.eq("project_id", project_id)
+        scope_id = folder_id or project_id
+        if scope_id:
+            query = query.eq("project_id", scope_id)
         response = query.order("uploaded_at", desc=True).execute()
         rows = response.data or []
         return [self._row_to_paper(row) for row in rows]

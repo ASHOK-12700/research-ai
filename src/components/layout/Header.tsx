@@ -18,7 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   const { theme, toggleTheme } = useTheme();
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([
-    { id: '1', title: 'Paper processing completed', desc: 'Swin-MedNet segmentation paper analyzed', time: '10 mins ago', read: false },
+    { id: '1', title: 'ResearchAI is ready', desc: 'Upload a paper to begin analysis.', time: '', read: true },
     { id: '2', title: 'Research Gap Discovered', desc: '4 medical imaging papers flagged small sample sizes', time: '1 hour ago', read: false },
     { id: '3', title: 'Summary Generated', desc: 'MobileNetV4 summary available', time: '3 hours ago', read: true }
   ]);

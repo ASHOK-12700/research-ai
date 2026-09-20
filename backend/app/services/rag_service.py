@@ -41,14 +41,14 @@ class SimpleRAGService:
         self.timeout_seconds = timeout_seconds or 180
 
     def _retrieve_relevant_sections(
-        self, query: str, user_id: str, top_k: int = 5
+        self, query: str, user_id: str, top_k: int = 5, folder_id: str | None = None
     ) -> list[tuple[str, str, str, int]]:
         """
         Retrieve relevant paper sections using simple text matching.
         
         Returns: list of (paper_id, paper_title, section_content, page_number) tuples
         """
-        papers = paper_repository.list(user_id=user_id)
+        papers = paper_repository.list(user_id=user_id, project_id=folder_id, folder_id=folder_id)
         if not papers:
             return []
 
@@ -121,6 +121,7 @@ Provide a well-structured answer with clear citations."""
         user_id: str,
         temperature: float = 0.2,
         reasoning_depth: str = "Standard Analysis",
+        folder_id: str | None = None,
     ) -> RAGResponse:
         """Execute RAG query over user's papers."""
         
@@ -132,7 +133,7 @@ Provide a well-structured answer with clear citations."""
             )
 
         # Retrieve relevant sections
-        retrieved = self._retrieve_relevant_sections(query, user_id, top_k=5)
+        retrieved = self._retrieve_relevant_sections(query, user_id, top_k=5, folder_id=folder_id)
         
         if not retrieved:
             return RAGResponse(

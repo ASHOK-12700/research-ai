@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquareQuote,
@@ -15,7 +15,6 @@ import {
 import { ragService } from '../services/ragService';
 import type { Evidence } from '../services/ragService';
 import { useAuth } from '../contexts/AuthContext';
-import { suggestedPrompts } from '../data/mockConversations';
 import type { ChatMessage, SourceReference } from '../types';
 
 export const AskPapersPage: React.FC = () => {
@@ -23,6 +22,8 @@ export const AskPapersPage: React.FC = () => {
     onOpenEvidence: (source: SourceReference) => void;
   }>();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const folderId = searchParams.get('folder_id');
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -55,6 +56,7 @@ export const AskPapersPage: React.FC = () => {
       // Call RAG service
       const response = await ragService.queryPapers({
         query: text,
+        folder_id: folderId,
         temperature: 0.2,
         reasoning_depth: 'Standard Analysis',
       });
@@ -114,7 +116,7 @@ export const AskPapersPage: React.FC = () => {
             Ask Your Papers
           </h1>
           <p className="text-sm text-[#b4b9c7]">
-            Query across your entire literature library with page-level citation evidence.
+            {folderId ? 'Querying the selected folder with page-level citation evidence.' : 'Query across your entire literature library with page-level citation evidence.'}
           </p>
         </div>
         <div className="px-3 py-1.5 text-xs font-mono font-bold text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 rounded-full flex items-center gap-2 shrink-0">
@@ -150,26 +152,13 @@ export const AskPapersPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Suggested Prompts */}
               <div className="space-y-3 text-left pt-4">
                 <span className="text-xs font-bold uppercase tracking-widest text-[#7d8599] flex items-center gap-2 justify-center">
-                  <HelpCircle className="w-4 h-4 text-indigo-400" /> Try These Queries
+                  <HelpCircle className="w-4 h-4 text-indigo-400" /> Start with a question
                 </span>
-                <div className="space-y-2">
-                  {suggestedPrompts.map((prompt, idx) => (
-                    <motion.button
-                      key={idx}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: idx * 0.05 }}
-                      onClick={() => handleSend(prompt)}
-                      className="w-full text-left p-4 rounded-lg bg-[#0f131a] hover:bg-indigo-600/10 border border-white/10 hover:border-indigo-500/50 text-sm text-[#b4b9c7] transition-all duration-200 cursor-pointer flex items-center justify-between group"
-                    >
-                      <span className="truncate">"{prompt}"</span>
-                      <span className="text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2">→</span>
-                    </motion.button>
-                  ))}
-                </div>
+                <p className="text-sm text-[#b4b9c7] text-center">
+                  Ask about your uploaded papers, methodology, findings, datasets, or limitations.
+                </p>
               </div>
             </motion.div>
           ) : (

@@ -19,6 +19,9 @@ import { ComparePage } from './pages/ComparePage';
 import { ResearchGapsPage } from './pages/ResearchGapsPage';
 import { CitationsPage } from './pages/CitationsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { FoldersPage } from './pages/FoldersPage';
+import { FolderDetailPage } from './pages/FolderDetailPage';
+import { HelpPage } from './pages/HelpPage';
 
 export const App: React.FC = () => {
   return (
@@ -43,6 +46,8 @@ export const App: React.FC = () => {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+            <Route path="/folders" element={<FoldersPage />} />
+            <Route path="/folders/:folderId" element={<FolderDetailPage />} />
             <Route path="/papers" element={<PapersPage />} />
             <Route path="/papers/:paperId" element={<PaperDetailPage />} />
             <Route path="/papers/:paperId/summary" element={<SummaryPage />} />
@@ -51,6 +56,7 @@ export const App: React.FC = () => {
             <Route path="/research-gaps" element={<ResearchGapsPage />} />
             <Route path="/citations" element={<CitationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/help" element={<HelpPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

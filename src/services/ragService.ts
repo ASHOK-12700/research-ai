@@ -1,4 +1,5 @@
 import { buildApiUrl } from './apiClient';
+import { getSupabaseAuthToken } from './authToken';
 
 export interface Evidence {
   paper_id: string;
@@ -18,6 +19,7 @@ export interface RAGAnswer {
 
 export interface RAGRequestParams {
   query: string;
+  folder_id?: string | null;
   temperature?: number;
   reasoning_depth?: string;
 }
@@ -25,15 +27,17 @@ export interface RAGRequestParams {
 export const ragService = {
   async queryPapers(params: RAGRequestParams): Promise<RAGAnswer> {
     const url = buildApiUrl('/ask/query');
+    const token = await getSupabaseAuthToken();
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token') || ''}`,
+        'Authorization': `Bearer ${token || ''}`,
       },
       body: JSON.stringify({
         query: params.query,
+        folder_id: params.folder_id ?? null,
         temperature: params.temperature ?? 0.2,
         reasoning_depth: params.reasoning_depth ?? 'Standard Analysis',
       }),

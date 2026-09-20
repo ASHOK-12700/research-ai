@@ -15,35 +15,42 @@ import {
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { ActivityTimeline } from '../components/timeline/ActivityTimeline';
-import { useStatsCounter } from '../hooks/useStatsCounter';
 import { projectService } from '../services/projectService';
-import { mockResearchInsights, mockTimelineEvents } from '../data/mockInsights';
+import { paperService } from '../services/paperService';
 import type { ResearchProject } from '../types';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { onOpenUpload } = useOutletContext<{ onOpenUpload: () => void }>();
   const [projects, setProjects] = useState<ResearchProject[]>([]);
+  const [paperCount, setPaperCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    projectService.getProjects().then((data) => {
-      setProjects(data);
-      setLoading(false);
-    });
+    const loadDashboardData = async () => {
+      try {
+        const [projectData, paperData] = await Promise.all([
+          projectService.getProjects(),
+          paperService.getPapers(),
+        ]);
+        setProjects(projectData);
+        setPaperCount(paperData.length);
+      } catch {
+        setProjects([]);
+        setPaperCount(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadDashboardData();
   }, []);
 
-  const projectCount = useStatsCounter(4);
-  const paperCount = useStatsCounter(41);
-  const gapCount = useStatsCounter(16);
-  const citationCount = useStatsCounter(128);
-
   const stats = [
-    { label: 'Research Projects', value: projectCount, icon: FolderKanban, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
+    { label: 'Research Projects', value: projects.length, icon: FolderKanban, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
     { label: 'Papers Analyzed', value: paperCount, icon: FileText, color: 'text-sky-400', bg: 'bg-sky-500/10' },
-    { label: 'Research Gaps', value: gapCount, icon: Lightbulb, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-    { label: 'Citations Generated', value: citationCount, icon: BookOpenCheck, color: 'text-purple-400', bg: 'bg-purple-500/10' }
+    { label: 'Research Gaps', value: 0, icon: Lightbulb, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    { label: 'Citations Generated', value: 0, icon: BookOpenCheck, color: 'text-purple-400', bg: 'bg-purple-500/10' }
   ];
 
   return (
@@ -57,10 +64,10 @@ export const DashboardPage: React.FC = () => {
       >
         <div className="space-y-2">
           <h1 className="text-4xl md:text-5xl font-bold text-[#f0f2f7] tracking-tight font-heading">
-            Welcome back, Researcher.
+            Welcome back.
           </h1>
           <p className="text-lg text-[#b4b9c7] max-w-2xl">
-            Continue exploring your research literature and uncover key cross-paper insights powered by advanced AI analysis.
+            Continue exploring your research literature and upload more papers whenever you are ready.
           </p>
         </div>
 
@@ -185,71 +192,27 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Activity & Insights - Premium Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Activity Timeline */}
-        <div className="lg:col-span-1 space-y-4">
-          <div className="space-y-1">
-            <h2 className="text-xl font-bold text-[#f0f2f7] font-heading flex items-center gap-2">
-              <Clock className="w-5 h-5 text-violet-400" />
-              Activity
-            </h2>
-            <p className="text-sm text-[#7d8599]">Recent changes</p>
-          </div>
-          <Card variant="glass" className="dashboard-glass h-full min-h-96">
-            <ActivityTimeline events={mockTimelineEvents} />
-          </Card>
-        </div>
-
-        {/* Research Insights - Premium */}
-        <div className="lg:col-span-2 space-y-5">
+      <div className="grid grid-cols-1 gap-8">
+        <div className="space-y-4">
           <div className="space-y-1">
             <h2 className="text-xl font-bold text-[#f0f2f7] font-heading flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-indigo-400" />
-              AI Research Insights
+              Your research workspace
             </h2>
-            <p className="text-sm text-[#7d8599]">Cross-paper intelligence from your literature</p>
+            <p className="text-sm text-[#7d8599]">The dashboard reflects your uploaded papers and active projects.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {mockResearchInsights.slice(0, 4).map((ins, idx) => (
-              <motion.div
-                key={ins.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-              >
-                <Card variant="glass" className="dashboard-glass h-full flex flex-col justify-between group relative overflow-hidden">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-1 text-[10px] uppercase font-mono font-bold text-indigo-300 bg-indigo-500/20 rounded-full">
-                        {ins.category}
-                      </span>
-                      <span className="text-[10px] text-[#7d8599] font-mono">{ins.generatedAt}</span>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-bold text-sm text-[#f0f2f7] leading-snug group-hover:text-indigo-300 transition-colors">
-                        {ins.title}
-                      </h4>
-                      <p className="text-xs text-[#b4b9c7] leading-relaxed line-clamp-2">
-                        {ins.description}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="pt-3 border-t border-white/10 mt-4">
-                    <button
-                      onClick={() => navigate('/research-gaps')}
-                      className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-2 transition-colors"
-                    >
-                      Explore gaps
-                      <ChevronRight className="w-3 h-3" />
-                    </button>
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 to-indigo-500/0 group-hover:from-indigo-500/5 group-hover:to-indigo-500/0 transition-all duration-300 pointer-events-none" />
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+          {projects.length === 0 && paperCount === 0 ? (
+            <Card variant="glass" className="dashboard-glass p-8 text-center">
+              <p className="text-[#b4b9c7]">No papers or projects are available yet. Upload a PDF to begin your research library.</p>
+            </Card>
+          ) : (
+            <Card variant="glass" className="dashboard-glass p-6">
+              <p className="text-sm text-[#b4b9c7]">
+                {paperCount} uploaded paper{paperCount === 1 ? '' : 's'} and {projects.length} project{projects.length === 1 ? '' : 's'} currently visible in your account.
+              </p>
+            </Card>
+          )}
         </div>
       </div>
     </div>

@@ -180,7 +180,7 @@ export const ProjectDetailPage: React.FC = () => {
                   AI Generated Research Executive Summary
                 </h3>
                 <p className="text-sm text-[#b4b9c7] leading-relaxed">
-                  Analysis across <strong className="text-[#f0f2f7]">{papers.length || project.paperCount} core papers</strong> reveals a rapid shift from traditional 2D ResNets towards shifted-window Vision Transformers (Swin-MedNet) and linear token mixing. Key reported improvements include a <strong className="text-[#f0f2f7]">1.9% higher Dice Similarity Coefficient</strong> on volumetric CT segmentation datasets with <strong className="text-[#f0f2f7]">40% fewer parameters</strong>. However, small cohort sample sizes (&lt; 100 scans) remain a persistent bottleneck for real-world institutional deployment.
+                  This workspace contains <strong className="text-[#f0f2f7]">{papers.length || project.paperCount} paper{(papers.length || project.paperCount) === 1 ? '' : 's'}</strong>. Generate paper summaries and use Ask Papers to build an evidence-backed synthesis from the extracted sections.
                 </p>
               </div>
             </div>
@@ -190,9 +190,9 @@ export const ProjectDetailPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: 'Total Analyzed Papers', value: `${papers.length || project.paperCount}`, sub: '100% Extracted' },
-              { label: 'Literature Time Horizon', value: '2016 – 2025', sub: '9 Year Range' },
-              { label: 'Dominant Methodology', value: 'Swin Transformer', sub: '58% of Papers' },
-              { label: 'Primary Dataset', value: 'Synapse Abdominal CT', sub: 'Used in 5 Papers' }
+              { label: 'Literature Time Horizon', value: papers.length ? `${Math.min(...papers.map((paper) => paper.year))} – ${Math.max(...papers.map((paper) => paper.year))}` : 'No data', sub: papers.length ? 'From uploaded metadata' : 'Upload papers to calculate' },
+              { label: 'Dominant Methodology', value: papers.length ? 'See extracted sections' : 'No data', sub: 'Derived from uploaded papers' },
+              { label: 'Primary Dataset', value: papers.length ? 'See extracted sections' : 'No data', sub: 'Derived from uploaded papers' }
             ].map((stat, i) => (
               <motion.div
                 key={i}
@@ -249,35 +249,18 @@ export const ProjectDetailPage: React.FC = () => {
                 Evidence-Based Key Findings
               </h3>
               <div className="space-y-3">
-                {[
-                  {
-                    title: 'Linear O(N) complexity replaces quadratic attention',
-                    snippet: 'Swin-MedNet reduces patch attention overhead while outperforming TransUNet by 1.9% DSC.'
-                  },
-                  {
-                    title: 'Gradient degradation solved by identity shortcuts',
-                    snippet: 'ResNet-152 identity paths allow training 8x deeper than VGG without parameter expansion.'
-                  }
-                ].map((kf, idx) => (
-                  <div key={idx} className="p-3 rounded-lg bg-[#0f131a] border border-white/10 hover:border-indigo-500/30 transition-colors space-y-1.5">
-                    <h4 className="text-xs font-bold text-[#f0f2f7]">{kf.title}</h4>
-                    <p className="text-xs text-[#b4b9c7] italic">"{kf.snippet}"</p>
+                {papers.slice(0, 3).map((paper) => (
+                  <div key={paper.id} className="p-3 rounded-lg bg-[#0f131a] border border-white/10 hover:border-indigo-500/30 transition-colors space-y-1.5">
+                    <h4 className="text-xs font-bold text-[#f0f2f7]">{paper.title}</h4>
+                    <p className="text-xs text-[#b4b9c7] italic">"{paper.sections?.[0]?.content?.slice(0, 300) || 'No extracted evidence available.'}"</p>
                   </div>
                 ))}
+                {!papers.length && <p className="text-sm text-zinc-400">Upload papers to derive findings.</p>}
               </div>
             </Card>
           </div>
-        </motion.div>
-      )}
 
-      {/* Papers Tab */}
-      {activeTab === 'papers' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4"
-        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {papers.map((paper, idx) => (
             <motion.div
               key={paper.id}
@@ -309,6 +292,7 @@ export const ProjectDetailPage: React.FC = () => {
               </Card>
             </motion.div>
           ))}
+          </div>
         </motion.div>
       )}
 
@@ -371,7 +355,7 @@ export const ProjectDetailPage: React.FC = () => {
 
       {activeTab === 'timeline' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-          <ResearchTimeline />
+          <ResearchTimeline papers={papers} />
         </motion.div>
       )}
     </div>
