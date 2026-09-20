@@ -9,6 +9,7 @@ import requests
 
 from app.core.config import get_settings
 from app.schemas.rag import Evidence, RAGResponse
+from app.services.folder_repository import folder_repository
 from app.services.paper_repository import paper_repository
 
 
@@ -35,9 +36,9 @@ class SimpleRAGService:
         timeout_seconds: int | None = None,
     ):
         settings = get_settings()
-        self.model = model or (settings.AI_MODEL or "meta/llama-3.2-3b-instruct")
-        self.base_url = (base_url or (settings.NVIDIA_BASE_URL or "https://integrate.api.nvidia.com/v1")).rstrip("/")
-        self.api_key = api_key or settings.NVIDIA_API_KEY
+        self.model = model or settings.CHATBOT_MODEL or settings.AI_MODEL or "meta/llama-3.2-3b-instruct"
+        self.base_url = (base_url or settings.CHATBOT_BASE_URL or settings.NVIDIA_BASE_URL or "https://integrate.api.nvidia.com/v1").rstrip("/")
+        self.api_key = api_key or settings.CHATBOT_API_KEY or settings.NVIDIA_API_KEY
         self.timeout_seconds = timeout_seconds or 180
 
     def _retrieve_relevant_sections(
@@ -48,7 +49,11 @@ class SimpleRAGService:
         
         Returns: list of (paper_id, paper_title, section_content, page_number) tuples
         """
-        papers = paper_repository.list(user_id=user_id, project_id=folder_id, folder_id=folder_id)
+        papers = (
+            paper_repository.list_in_folder(folder_id, user_id)
+            if folder_id
+            else paper_repository.list(user_id=user_id)
+        )
         if not papers:
             return []
 
@@ -58,7 +63,12 @@ class SimpleRAGService:
 
         for paper in papers:
             # Search in title and sections
-            for section in paper.sections:
+            sections = paper.sections or [
+                type("PaperText", (), {"title": "Full text", "content": paper.full_text, "page_start": None})()
+            ]
+            for section in sections:
+                if not section.content:
+                    continue
                 section_text = f"{section.title} {section.content}".lower()
                 # Simple term matching - count how many query terms appear
                 matches = sum(1 for term in query_terms if term in section_text)
@@ -132,6 +142,22 @@ Provide a well-structured answer with clear citations."""
                 status_code=422,
             )
 
+        if folder_id:
+            folder = folder_repository.get(user_id, folder_id)
+            if folder is None:
+                raise RAGServiceError(
+                    user_message="The selected folder was not found.",
+                    internal_message=f"Folder {folder_id} is not owned by user {user_id}.",
+                    status_code=404,
+                )
+            if not folder.get("paper_ids"):
+                return RAGResponse(
+                    answer="The selected folder has no papers to search.",
+                    evidence=[],
+                    query=query,
+                    reasoning_depth=reasoning_depth,
+                )
+
         # Retrieve relevant sections
         retrieved = self._retrieve_relevant_sections(query, user_id, top_k=5, folder_id=folder_id)
         
@@ -162,6 +188,13 @@ Provide a well-structured answer with clear citations."""
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
         }
+
+        if not self.api_key:
+            raise RAGServiceError(
+                user_message="The AI service is not configured. Please contact the administrator.",
+                internal_message="Missing NVIDIA_API_KEY in backend environment.",
+                status_code=503,
+            )
 
         try:
             response = requests.post(

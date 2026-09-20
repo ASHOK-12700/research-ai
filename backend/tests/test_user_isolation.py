@@ -29,6 +29,10 @@ class _FakeQuery:
         self.calls.append((column, value))
         return self
 
+    def in_(self, column, values):
+        self.calls.append((column, values))
+        return self
+
     def order(self, *_args, **_kwargs):
         return self
 
@@ -130,9 +134,8 @@ def test_user_specific_paper_queries_do_not_overlap(monkeypatch):
 def test_rag_service_scopes_queries_to_selected_folder(monkeypatch):
     calls = {}
 
-    def fake_list(*, user_id=None, project_id=None, folder_id=None, **kwargs):
+    def fake_list_in_folder(folder_id, user_id):
         calls['user_id'] = user_id
-        calls['project_id'] = project_id
         calls['folder_id'] = folder_id
         return [
             SimpleNamespace(
@@ -142,7 +145,7 @@ def test_rag_service_scopes_queries_to_selected_folder(monkeypatch):
             )
         ]
 
-    monkeypatch.setattr('app.services.rag_service.paper_repository.list', fake_list)
+    monkeypatch.setattr('app.services.rag_service.paper_repository.list_in_folder', fake_list_in_folder)
     result = __import__('app.services.rag_service', fromlist=['rag_service']).rag_service._retrieve_relevant_sections(
         'training pipeline',
         'user-a',
@@ -151,5 +154,35 @@ def test_rag_service_scopes_queries_to_selected_folder(monkeypatch):
 
     assert result
     assert calls['user_id'] == 'user-a'
-    assert calls['project_id'] == 'folder-7'
     assert calls['folder_id'] == 'folder-7'
+
+
+def test_paper_repository_folder_query_uses_membership_and_owner(monkeypatch):
+    membership_query = _FakeQuery(rows=[{'paper_id': 'paper-1'}])
+    paper_query = _FakeQuery(rows=[{
+        'id': 'paper-1',
+        'title': 'Folder Paper',
+        'filename': 'paper.pdf',
+        'storage_path': 'path',
+        'page_count': 1,
+        'project_id': 'other-project',
+        'file_size_bytes': 100,
+        'metadata': {},
+        'sections': [],
+        'uploaded_at': '2024-01-01T00:00:00Z',
+        'full_text': 'evidence',
+        'user_id': 'user-a',
+    }])
+    queries = iter([membership_query, paper_query])
+    monkeypatch.setattr(
+        'app.services.paper_repository.supabase_service.table',
+        lambda *_args, **_kwargs: next(queries),
+    )
+
+    papers = SupabasePaperRepository().list_in_folder('folder-7', 'user-a')
+
+    assert [paper.id for paper in papers] == ['paper-1']
+    assert ('folder_id', 'folder-7') in membership_query.calls
+    assert ('user_id', 'user-a') in membership_query.calls
+    assert ('user_id', 'user-a') in paper_query.calls
+    assert ('id', ['paper-1']) in paper_query.calls

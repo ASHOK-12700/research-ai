@@ -10,6 +10,41 @@ import { Card } from '../components/ui/Card';
 import { paperService } from '../services/paperService';
 import type { Paper } from '../types';
 
+const NOT_AVAILABLE = 'Not available in this paper';
+
+function extractedSection(paper: Paper, pattern: RegExp): string | undefined {
+  return paper.sections?.find((section) => pattern.test(section.title))?.content;
+}
+
+function comparisonValue(paper: Paper, key: string): string {
+  const summary = paper.extractedSummary;
+  const values: Record<string, string | undefined> = {
+    research_problem: summary?.research_problem || extractedSection(paper, /problem|introduction|motivation/i),
+    objectives: summary?.objectives || extractedSection(paper, /objective|goal|aim/i),
+    abstract: summary?.abstract_overview || paper.abstract,
+    methodology: summary?.methodology || extractedSection(paper, /method|approach|experiment|material/i),
+    algorithms: summary?.proposed_approach_model || extractedSection(paper, /algorithm|model|architecture|approach/i),
+    dataset: summary?.dataset_data_used || extractedSection(paper, /dataset|data|corpus|benchmark/i),
+    results: summary?.key_results || extractedSection(paper, /result|finding|evaluation/i),
+    limitations: summary?.limitations || extractedSection(paper, /limitation|threat/i),
+    future_work: summary?.future_work || extractedSection(paper, /future|conclusion|discussion/i),
+    authors: paper.authors?.filter((author) => author && author !== 'Unknown Author').join(', '),
+    year: paper.year > 0 ? String(paper.year) : undefined,
+    journal: paper.journal,
+    references: extractedSection(paper, /reference|bibliograph|citation/i),
+    tags: paper.tags?.join(' • '),
+  };
+  const value = values[key];
+  return value && value.trim() ? value : NOT_AVAILABLE;
+}
+
+function comparisonNote(paper: Paper): string {
+  const availableSections = paper.sections?.map((section) => section.title).filter(Boolean) || [];
+  return availableSections.length > 0
+    ? `${paper.title}: extracted sections available include ${availableSections.join(', ')}.`
+    : `${paper.title}: ${NOT_AVAILABLE}`;
+}
+
 export const ComparePage: React.FC = () => {
   const [allPapers, setAllPapers] = useState<Paper[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -36,11 +71,19 @@ export const ComparePage: React.FC = () => {
   };
 
   const rows = [
+    { label: 'Research Problem', key: 'research_problem' },
+    { label: 'Objective', key: 'objectives' },
     { label: 'Abstract', key: 'abstract' },
-    { label: 'Tags', key: 'tags' },
-    { label: 'Journal / Venue', key: 'journal' },
+    { label: 'Methodology', key: 'methodology' },
+    { label: 'Algorithms / Models', key: 'algorithms' },
+    { label: 'Dataset / Data', key: 'dataset' },
+    { label: 'Key Results', key: 'results' },
+    { label: 'Limitations', key: 'limitations' },
+    { label: 'Future Work', key: 'future_work' },
     { label: 'Authors', key: 'authors' },
     { label: 'Year', key: 'year' },
+    { label: 'Journal / Venue', key: 'journal' },
+    { label: 'References / Citation Information', key: 'references' },
   ] as const;
 
   return (
@@ -120,9 +163,11 @@ export const ComparePage: React.FC = () => {
                     {selectedPapers.map((paper) => (
                       <th key={paper.id} className="p-5 text-sm font-bold text-[#f0f2f7] min-w-[260px] border-r border-white/10">
                         <div className="space-y-2">
-                          <span className="text-xs text-indigo-400 font-mono block">{paper.journal} ({paper.year})</span>
+                          <span className="text-xs text-indigo-400 font-mono block">
+                            {comparisonValue(paper, 'journal')} ({comparisonValue(paper, 'year')})
+                          </span>
                           <div className="line-clamp-2 text-sm">{paper.title}</div>
-                          <span className="text-xs text-[#7d8599] font-mono block">{paper.authors[0]}</span>
+                          <span className="text-xs text-[#7d8599] font-mono block">{comparisonValue(paper, 'authors')}</span>
                         </div>
                       </th>
                     ))}
@@ -135,13 +180,11 @@ export const ComparePage: React.FC = () => {
                         {row.label}
                       </td>
                       {selectedPapers.map((paper) => {
-                        const summary = paper.summary;
-                        let content = summary ? (summary as any)[row.key] : 'N/A';
-                        if (Array.isArray(content)) content = content.join(' • ');
+                        const content = comparisonValue(paper, row.key);
 
                         return (
                           <td key={paper.id} className="p-5 text-sm text-[#b4b9c7] leading-relaxed border-r border-white/10 align-top hover:bg-white/5 transition-colors">
-                            <p className="line-clamp-6">{content || 'Not specified'}</p>
+                            <p className="line-clamp-6">{content}</p>
                           </td>
                         );
                       })}
@@ -168,8 +211,11 @@ export const ComparePage: React.FC = () => {
             <h2 className="text-2xl font-bold text-[#f0f2f7] font-heading">Comparison Notes</h2>
           </div>
 
-          <Card className="p-4 text-sm text-[#b4b9c7]">
-            Comparison fields are derived from the actual uploaded papers in your current library. If a paper lacks a section, it is shown as “Not available in this paper.”
+          <Card className="p-4 text-sm text-[#b4b9c7] space-y-2">
+            <p>Comparison notes reflect the extracted evidence available in the selected papers.</p>
+            {selectedPapers.map((paper) => (
+              <p key={paper.id}>{comparisonNote(paper)}</p>
+            ))}
           </Card>
         </motion.div>
       )}

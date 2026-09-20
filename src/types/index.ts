@@ -51,6 +51,18 @@ export interface PaperSummary {
   futureWork: string[];
 }
 
+export interface ExtractedPaperSummary {
+  abstract_overview?: string;
+  research_problem?: string;
+  objectives?: string;
+  methodology?: string;
+  dataset_data_used?: string;
+  proposed_approach_model?: string;
+  key_results?: string;
+  limitations?: string;
+  future_work?: string;
+}
+
 export interface Paper {
   id: string;
   title: string;
@@ -69,6 +81,7 @@ export interface Paper {
   citationsCount: number;
   sections?: PaperSection[];
   summary?: PaperSummary;
+  extractedSummary?: ExtractedPaperSummary;
 }
 
 export interface SourceReference {

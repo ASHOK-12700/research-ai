@@ -104,6 +104,28 @@ class SupabasePaperRepository:
         rows = response.data or []
         return [self._row_to_paper(row) for row in rows]
 
+    def list_in_folder(self, folder_id: str, user_id: str) -> list[StoredPaper]:
+        membership_response = (
+            supabase_service.table("folder_papers")
+            .select("paper_id")
+            .eq("folder_id", folder_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+        paper_ids = [str(row["paper_id"]) for row in (membership_response.data or [])]
+        if not paper_ids:
+            return []
+
+        response = (
+            supabase_service.table(self._table)
+            .select("*")
+            .eq("user_id", user_id)
+            .in_("id", paper_ids)
+            .order("uploaded_at", desc=True)
+            .execute()
+        )
+        return [self._row_to_paper(row) for row in (response.data or [])]
+
     def get(self, paper_id: str, user_id: str | None = None) -> StoredPaper | None:
         query = supabase_service.table(self._table).select("*").eq("id", paper_id)
         if user_id:

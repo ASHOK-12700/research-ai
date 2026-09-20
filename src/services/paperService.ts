@@ -15,6 +15,7 @@ type BackendPaperMetadata = {
   authors?: string[];
   subject?: string | null;
   keywords?: string[];
+  creation_date?: string | null;
 };
 
 type BackendPaper = {
@@ -44,22 +45,21 @@ function mapBackendPaperToFrontendPaper(paper: BackendPaper): Paper {
     ...(paper.project_id ? ['Uploaded'] : ['PDF Extracted'])
   ];
 
-  const abstractSection = paper.sections.find((section) => section.title.toLowerCase() === 'abstract');
-  const firstSection = paper.sections[0];
+  const abstractSection = paper.sections.find((section) => /^abstract$/i.test(section.title));
 
   return {
     id: paper.id,
     title: paper.title,
     authors,
-    year: new Date(paper.uploaded_at).getUTCFullYear(),
-    journal: paper.metadata.subject || 'Uploaded PDF',
+    year: 0,
+    journal: paper.metadata.subject || '',
     projectId: paper.project_id ?? undefined,
     projectTitle: paper.project_id ? 'Research Project' : undefined,
     tags: tags.length > 0 ? tags : ['Uploaded', 'PDF Analysis'],
     summaryStatus: 'pending',
     similarityScore: 0,
     similarityReason: 'Uploaded and extracted locally by the backend.',
-    abstract: abstractSection?.content || firstSection?.content || 'Extracted PDF text available in sections below.',
+    abstract: abstractSection?.content || '',
     fileSize: paper.file_size_bytes ? `${(paper.file_size_bytes / (1024 * 1024)).toFixed(2)} MB` : undefined,
     uploadDate: paper.uploaded_at.split('T')[0],
     citationsCount: 0,
@@ -69,7 +69,18 @@ function mapBackendPaperToFrontendPaper(paper: BackendPaper): Paper {
       content: section.content,
       pageNumber: section.page_start,
       pageEnd: section.page_end
-    }))
+    })),
+    extractedSummary: {
+      abstract_overview: abstractSection?.content,
+      research_problem: paper.sections.find((section) => /problem|introduction|motivation/i.test(section.title))?.content,
+      objectives: paper.sections.find((section) => /objective|goal|aim/i.test(section.title))?.content,
+      methodology: paper.sections.find((section) => /method|approach|experiment|material/i.test(section.title))?.content,
+      dataset_data_used: paper.sections.find((section) => /dataset|data|corpus|benchmark/i.test(section.title))?.content,
+      proposed_approach_model: paper.sections.find((section) => /model|algorithm|architecture|approach/i.test(section.title))?.content,
+      key_results: paper.sections.find((section) => /result|finding|evaluation/i.test(section.title))?.content,
+      limitations: paper.sections.find((section) => /limitation|threat/i.test(section.title))?.content,
+      future_work: paper.sections.find((section) => /future|conclusion|discussion/i.test(section.title))?.content
+    }
   };
 }
 
