@@ -3,6 +3,7 @@ import type { Paper } from '../types';
 import { buildApiUrl } from './apiClient';
 
 type BackendPaperSection = {
+  id?: string | null;
   title: string;
   content: string;
   page_start: number;
@@ -63,10 +64,11 @@ function mapBackendPaperToFrontendPaper(paper: BackendPaper): Paper {
     uploadDate: paper.uploaded_at.split('T')[0],
     citationsCount: 0,
     sections: paper.sections.map((section, index) => ({
-      id: `${paper.id}-sec-${index + 1}`,
+      id: section.id || `${paper.id}-sec-${index + 1}`,
       title: section.title,
       content: section.content,
-      pageNumber: section.page_start
+      pageNumber: section.page_start,
+      pageEnd: section.page_end
     }))
   };
 }

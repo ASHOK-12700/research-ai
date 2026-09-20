@@ -15,6 +15,7 @@ class PaperMetadata(BaseModel):
 
 
 class PaperSection(BaseModel):
+    id: str | None = None
     title: str
     content: str
     page_start: int

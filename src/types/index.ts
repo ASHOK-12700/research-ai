@@ -35,6 +35,7 @@ export interface PaperSection {
   title: string;
   content: string;
   pageNumber: number;
+  pageEnd?: number;
 }
 
 export interface PaperSummary {

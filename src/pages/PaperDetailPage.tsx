@@ -46,7 +46,8 @@ export const PaperDetailPage: React.FC = () => {
         setPaper(pData);
         setRelated(rData);
         if (pData?.sections && pData.sections[0]) {
-          setActiveSection(pData.sections[0].id);
+          const abstract = pData.sections.find((section) => section.title.trim().toLowerCase() === 'abstract');
+          setActiveSection(abstract?.id || pData.sections[0].id);
         }
       })
       .finally(() => setLoading(false));
@@ -107,7 +108,7 @@ export const PaperDetailPage: React.FC = () => {
     }
 
     const lines = cleaned
-      .split(/(?<=[.!?])\s+(?=[A-Z0-9\-])/)
+      .split(/\n+|(?<=[.!?])\s+(?=[A-Z0-9\-])/)
       .map((line) => line.trim())
       .filter(Boolean);
 
@@ -145,6 +146,8 @@ export const PaperDetailPage: React.FC = () => {
       </div>
     );
   }
+
+  const activePaperSection = paper.sections?.find((section) => section.id === activeSection) || paper.sections?.[0];
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
@@ -238,11 +241,7 @@ export const PaperDetailPage: React.FC = () => {
               {paper.sections?.map((sec) => (
                 <button
                   key={sec.id}
-                  onClick={() => {
-                    setActiveSection(sec.id);
-                    const el = document.getElementById(sec.id);
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }}
+                  onClick={() => setActiveSection(sec.id)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer ${
                     activeSection === sec.id
                       ? 'bg-indigo-600/20 text-indigo-300 font-bold border-l-2 border-indigo-500'
@@ -260,20 +259,17 @@ export const PaperDetailPage: React.FC = () => {
         <div className="lg:col-span-6 space-y-6">
           <Card className="space-y-6 p-6 sm:p-8">
             <div className="border-b border-white/10 pb-4">
-              <h2 className="text-lg font-bold text-zinc-100 font-heading">Extracted Manuscript Content</h2>
-              <p className="text-xs text-zinc-400 mt-0.5">Parsed structure and mathematical equations from raw PDF.</p>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-zinc-100 font-heading">{activePaperSection?.title || 'Extracted Section'}</h2>
+                  <p className="text-xs text-zinc-400 mt-0.5">Page {activePaperSection ? `${activePaperSection.pageNumber}${activePaperSection.pageEnd && activePaperSection.pageEnd !== activePaperSection.pageNumber ? `-${activePaperSection.pageEnd}` : ''}` : '—'}</p>
+                </div>
+                <span className="text-[10px] uppercase tracking-wider text-indigo-400 font-mono">Selected section</span>
+              </div>
             </div>
 
-            <div className="space-y-8">
-              {paper.sections?.map((sec) => (
-                <div key={sec.id} id={sec.id} className="space-y-2 scroll-mt-24">
-                  <div className="flex items-center justify-between pb-1 border-b border-white/5">
-                    <h3 className="text-base font-bold text-indigo-400 font-heading">{sec.title}</h3>
-                    <span className="text-[10px] font-mono text-zinc-500">Page {sec.pageNumber}</span>
-                  </div>
-                  {renderStructuredText(sec.content)}
-                </div>
-              ))}
+            <div className="space-y-2">
+              {activePaperSection ? renderStructuredText(activePaperSection.content) : <p className="text-sm text-zinc-400">Not available in this paper.</p>}
             </div>
           </Card>
         </div>

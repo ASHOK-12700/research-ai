@@ -10,23 +10,19 @@ import fitz
 from app.schemas.papers import PaperMetadata, PaperSection
 
 
-SECTION_HEADINGS = [
-    "Abstract",
-    "Introduction",
-    "Related Work",
-    "Methods",
-    "Methodology",
-    "Dataset",
-    "Experiments",
-    "Results",
-    "Discussion",
-    "Limitations",
-    "Conclusion",
-    "References",
-]
+SECTION_HEADINGS = {
+    "abstract", "introduction", "background", "related work", "literature review",
+    "methodology", "methods", "materials and methods", "proposed method",
+    "system architecture", "algorithms", "models", "dataset", "data", "experiments",
+    "experimental setup", "results", "discussion", "limitations", "problems",
+    "future work", "conclusion", "conclusions", "references", "review planning",
+    "mapping questions", "inclusion and exclusion criteria", "search strategy",
+    "review process",
+}
 
+NUMBER_PREFIX = r"(?:\s*(?:[IVXLCDM]+|\d+(?:\.\d+)*)(?:\s*[.)-])?\s*)?"
 HEADING_PATTERN = re.compile(
-    r"^\s*(?:\d+(?:\.\d+)*\s*)?(?P<title>Abstract|Introduction|Related Work|Methods?|Methodology|Dataset|Experiments?|Results?|Discussion|Limitations?|Conclusion|References?)\s*[:.]?\s*$",
+    rf"^\s*{NUMBER_PREFIX}(?P<title>[A-Za-z][A-Za-z0-9 &'()/,-]{{1,100}})\s*[:.]?\s*$",
     re.IGNORECASE,
 )
 
@@ -105,7 +101,23 @@ def _build_metadata(doc: fitz.Document) -> PaperMetadata:
 def _is_heading(line: str) -> re.Match[str] | None:
     if len(line) > 120:
         return None
-    return HEADING_PATTERN.match(line)
+    match = HEADING_PATTERN.match(line)
+    if not match:
+        return None
+
+    title = re.sub(r"\s+", " ", match.group("title")).strip(" .:")
+    if title.casefold() in SECTION_HEADINGS:
+        return match
+
+    has_number_prefix = bool(re.match(rf"^\s*{NUMBER_PREFIX}", line))
+    words = title.split()
+    looks_like_heading = (
+        has_number_prefix
+        and len(words) <= 12
+        and not re.search(r"[.!?]", title)
+        and title == title.title()
+    )
+    return match if looks_like_heading else None
 
 
 def _finalize_section(
@@ -124,6 +136,7 @@ def _finalize_section(
 
     sections.append(
         PaperSection(
+            id=f"section-{len(sections) + 1}",
             title=title,
             content=content,
             page_start=page_start,
@@ -156,7 +169,7 @@ def extract_pdf_document(source_path: Path) -> PDFExtractionResult:
 
                 if heading_match:
                     _finalize_section(sections, current_title, current_lines, current_page_start, page_index)
-                    current_title = heading_match.group("title").title()
+                    current_title = re.sub(r"\s+", " ", heading_match.group("title")).strip(" .:")
                     current_lines = []
                     current_page_start = page_index
                     continue
