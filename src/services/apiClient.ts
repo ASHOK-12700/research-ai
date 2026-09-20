@@ -6,5 +6,10 @@ export const API_BASE_URL = (
 ).replace(/\/$/, '');
 
 export function buildApiUrl(path: string): string {
-  return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  const normalizedPath = `/${path.replace(/^\/+/, '')}`;
+  const baseHasApiPrefix = /\/api$/i.test(API_BASE_URL);
+  const pathHasApiPrefix = /^\/api(?:\/|$)/i.test(normalizedPath);
+  const apiPath = pathHasApiPrefix ? normalizedPath : `/api${normalizedPath}`;
+  const relativePath = baseHasApiPrefix ? apiPath.replace(/^\/api/i, '') || '/' : apiPath;
+  return `${API_BASE_URL}${relativePath}`;
 }

@@ -26,7 +26,7 @@ export interface RAGRequestParams {
 
 export const ragService = {
   async queryPapers(params: RAGRequestParams): Promise<RAGAnswer> {
-    const url = buildApiUrl('/ask/query');
+    const url = buildApiUrl('/api/chat/message');
     const token = await getSupabaseAuthToken();
     
     const response = await fetch(url, {
@@ -37,15 +37,20 @@ export const ragService = {
       },
       body: JSON.stringify({
         query: params.query,
-        folder_id: params.folder_id ?? null,
+        folder_id: params.folder_id,
         temperature: params.temperature ?? 0.2,
         reasoning_depth: params.reasoning_depth ?? 'Standard Analysis',
       }),
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Failed to query papers' }));
-      throw new Error(error.detail || `HTTP ${response.status}`);
+      const error = await response.json().catch(() => ({ detail: '' }));
+      const detail = typeof error.detail === 'string' ? error.detail : '';
+      throw new Error(
+        response.status === 404 || response.status >= 500
+          ? 'Ask Papers service is unavailable. Please try again.'
+          : detail || 'Ask Papers request failed. Please try again.'
+      );
     }
 
     return response.json();

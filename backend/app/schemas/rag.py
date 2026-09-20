@@ -42,8 +42,14 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     """Request for chatbot endpoint."""
-    messages: list[ChatMessage]
+    messages: list[ChatMessage] | None = None
+    query: str | None = Field(default=None, min_length=1, max_length=1000)
+    folder_id: str | None = Field(default=None, max_length=255)
     temperature: float = Field(default=0.7, ge=0.0, le=1.0)
+
+    @property
+    def is_paper_query(self) -> bool:
+        return self.query is not None or self.folder_id is not None
 
 
 class ChatResponse(BaseModel):

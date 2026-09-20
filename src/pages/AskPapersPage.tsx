@@ -14,8 +14,10 @@ import {
 } from 'lucide-react';
 import { ragService } from '../services/ragService';
 import type { Evidence } from '../services/ragService';
+import { folderService } from '../services/folderService';
+import { paperService } from '../services/paperService';
 import { useAuth } from '../contexts/AuthContext';
-import type { ChatMessage, SourceReference } from '../types';
+import type { ChatMessage, Paper, ResearchFolder, SourceReference } from '../types';
 
 export const AskPapersPage: React.FC = () => {
   const { onOpenEvidence } = useOutletContext<{
@@ -23,13 +25,57 @@ export const AskPapersPage: React.FC = () => {
   }>();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const folderId = searchParams.get('folder_id');
+  const initialFolderId = searchParams.get('folder_id');
 
+  const [folders, setFolders] = useState<ResearchFolder[]>([]);
+  const [papers, setPapers] = useState<Paper[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string>(initialFolderId || '');
+  const [foldersLoading, setFoldersLoading] = useState(true);
+  const [folderError, setFolderError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const selectedFolder = folders.find((folder) => folder.id === selectedFolderId);
+  const selectedPapers = selectedFolder
+    ? papers.filter((paper) => selectedFolder.paperIds.includes(paper.id))
+    : [];
+
+  useEffect(() => {
+    let active = true;
+    const loadFolderContext = async () => {
+      setFoldersLoading(true);
+      setFolderError(null);
+      try {
+        const [folderData, paperData] = await Promise.all([
+          folderService.getFolders(),
+          paperService.getPapers(),
+        ]);
+        if (!active) return;
+        setFolders(folderData);
+        setPapers(paperData);
+        setSelectedFolderId((current) => {
+          if (current && folderData.some((folder) => folder.id === current)) return current;
+          return '';
+        });
+      } catch (err) {
+        if (active) setFolderError(err instanceof Error ? err.message : 'Unable to load folders.');
+      } finally {
+        if (active) setFoldersLoading(false);
+      }
+    };
+    loadFolderContext();
+    return () => { active = false; };
+  }, []);
+
+  const handleFolderChange = (nextFolderId: string) => {
+    setSelectedFolderId(nextFolderId);
+    setMessages([]);
+    setError(null);
+    setInput('');
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -37,7 +83,7 @@ export const AskPapersPage: React.FC = () => {
 
   const handleSend = async (textToSend?: string) => {
     const text = textToSend || input;
-    if (!text.trim() || loading || !user) return;
+    if (!text.trim() || loading || !user || !selectedFolderId || !selectedFolder || selectedPapers.length === 0) return;
 
     setInput('');
     setError(null);
@@ -56,7 +102,7 @@ export const AskPapersPage: React.FC = () => {
       // Call RAG service
       const response = await ragService.queryPapers({
         query: text,
-        folder_id: folderId,
+        folder_id: selectedFolderId,
         temperature: 0.2,
         reasoning_depth: 'Standard Analysis',
       });
@@ -116,7 +162,7 @@ export const AskPapersPage: React.FC = () => {
             Ask Your Papers
           </h1>
           <p className="text-sm text-[#b4b9c7]">
-            {folderId ? 'Querying the selected folder with page-level citation evidence.' : 'Query across your entire literature library with page-level citation evidence.'}
+            {selectedFolder ? `Querying ${selectedFolder.name} with page-level citation evidence.` : 'Select a folder to define the papers used for every answer.'}
           </p>
         </div>
         <div className="px-3 py-1.5 text-xs font-mono font-bold text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 rounded-full flex items-center gap-2 shrink-0">
@@ -128,6 +174,52 @@ export const AskPapersPage: React.FC = () => {
           </motion.span>
           RAG Active
         </div>
+      </div>
+
+      <div className="shrink-0 rounded-xl bg-[#0f131a] border border-white/10 p-5 space-y-4">
+        <label htmlFor="ask-papers-folder" className="block text-xs font-bold uppercase tracking-widest text-[#7d8599]">
+          Folder selector
+        </label>
+        {foldersLoading ? (
+          <div className="h-10 rounded-lg bg-white/5 animate-pulse" />
+        ) : folders.length === 0 ? (
+          <p className="text-sm text-amber-300">Create a folder and add papers before using folder-scoped Ask Papers.</p>
+        ) : (
+          <>
+            <select
+              id="ask-papers-folder"
+              value={selectedFolderId}
+              onChange={(event) => handleFolderChange(event.target.value)}
+              className="w-full rounded-lg bg-[#121820] border border-white/10 px-3 py-2.5 text-sm text-[#f0f2f7] focus:outline-none focus:border-indigo-500/50"
+            >
+              <option value="">Select a research folder</option>
+              {folders.map((folder) => (
+                <option key={folder.id} value={folder.id}>{folder.name}</option>
+              ))}
+            </select>
+            {selectedFolder && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-[#f0f2f7]">Selected folder: {selectedFolder.name}</p>
+                  <span className="text-xs text-indigo-300 font-mono">{selectedPapers.length} papers in this folder</span>
+                </div>
+                {selectedPapers.length === 0 ? (
+                  <p className="text-sm text-amber-300">This folder has no papers yet. Add papers to this folder to ask questions about them.</p>
+                ) : (
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {selectedPapers.map((paper) => (
+                      <li key={paper.id} className="flex items-center gap-2 text-sm text-[#b4b9c7]">
+                        <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
+                        <span className="truncate">{paper.title}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </>
+        )}
+        {folderError && <p className="text-sm text-red-400">Ask Papers service is unavailable. Please try again.</p>}
       </div>
 
       {/* Messages Scroll Area */}
@@ -148,7 +240,7 @@ export const AskPapersPage: React.FC = () => {
               <div className="space-y-3">
                 <h2 className="text-2xl font-bold text-[#f0f2f7] font-heading">Ask About Your Research</h2>
                 <p className="text-sm text-[#b4b9c7] leading-relaxed">
-                  Our AI synthesizes evidence across all papers in your library, citing exact pages and sections.
+                  Our AI synthesizes evidence only from the selected folder, citing exact pages and sections.
                 </p>
               </div>
 
@@ -303,7 +395,7 @@ export const AskPapersPage: React.FC = () => {
           />
           <button
             type="submit"
-            disabled={loading || !input.trim()}
+            disabled={loading || !input.trim() || !selectedFolderId || selectedPapers.length === 0}
             className="shrink-0 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-[#f0f2f7] font-medium text-sm flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/20"
           >
             <Send className="w-4 h-4" />

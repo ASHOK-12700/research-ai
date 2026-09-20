@@ -37,19 +37,19 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export const folderService = {
   async getFolders(): Promise<ResearchFolder[]> {
-    const data = await request<{ folders: BackendFolder[]; total: number }>('/folders/');
+    const data = await request<{ folders: BackendFolder[]; total: number }>('/api/folders/');
     return data.folders.map(mapFolder);
   },
   async getFolder(id: string): Promise<ResearchFolder> {
-    return mapFolder(await request<BackendFolder>(`/folders/${encodeURIComponent(id)}`));
+    return mapFolder(await request<BackendFolder>(`/api/folders/${encodeURIComponent(id)}`));
   },
   async createFolder(data: { name: string; description: string; paperIds: string[] }): Promise<ResearchFolder> {
-    return mapFolder(await request<BackendFolder>('/folders/', { method: 'POST', body: JSON.stringify({ name: data.name, description: data.description, paper_ids: data.paperIds }) }));
+    return mapFolder(await request<BackendFolder>('/api/folders/', { method: 'POST', body: JSON.stringify({ name: data.name, description: data.description, paper_ids: data.paperIds }) }));
   },
   async addPapers(id: string, paperIds: string[]): Promise<ResearchFolder> {
-    return mapFolder(await request<BackendFolder>(`/folders/${encodeURIComponent(id)}/papers`, { method: 'POST', body: JSON.stringify({ paper_ids: paperIds }) }));
+    return mapFolder(await request<BackendFolder>(`/api/folders/${encodeURIComponent(id)}/papers`, { method: 'POST', body: JSON.stringify({ paper_ids: paperIds }) }));
   },
   async removePaper(id: string, paperId: string): Promise<ResearchFolder> {
-    return mapFolder(await request<BackendFolder>(`/folders/${encodeURIComponent(id)}/papers/${encodeURIComponent(paperId)}`, { method: 'DELETE' }));
+    return mapFolder(await request<BackendFolder>(`/api/folders/${encodeURIComponent(id)}/papers/${encodeURIComponent(paperId)}`, { method: 'DELETE' }));
   },
 };

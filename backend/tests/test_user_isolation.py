@@ -3,8 +3,11 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
+from starlette.requests import Request
 
 from app.api.routes.papers import get_authenticated_user_id
+from app.api.routes.chatbot import chat
+from app.schemas.rag import ChatRequest
 from app.services.paper_repository import SupabasePaperRepository
 
 
@@ -186,3 +189,49 @@ def test_paper_repository_folder_query_uses_membership_and_owner(monkeypatch):
     assert ('user_id', 'user-a') in membership_query.calls
     assert ('user_id', 'user-a') in paper_query.calls
     assert ('id', ['paper-1']) in paper_query.calls
+
+
+def test_chat_message_routes_folder_query_to_rag(monkeypatch):
+    request = Request({
+        'type': 'http',
+        'method': 'POST',
+        'path': '/api/chat/message',
+        'headers': [(b'authorization', b'Bearer token')],
+        'query_string': b'',
+        'client': ('testclient', 50000),
+        'server': ('testserver', 80),
+        'scheme': 'http',
+    })
+    calls = {}
+
+    monkeypatch.setattr('app.api.routes.chatbot.get_authenticated_user_id', lambda value: 'user-a')
+
+    def fake_query(**kwargs):
+        calls.update(kwargs)
+        return {'answer': 'Grounded answer', 'evidence': [], 'query': kwargs['query'], 'reasoning_depth': 'Standard Analysis'}
+
+    monkeypatch.setattr('app.api.routes.chatbot.rag_service.query', fake_query)
+
+    response = __import__('asyncio').run(chat(
+        request,
+        ChatRequest(query='What method?', folder_id='folder-7'),
+    ))
+
+    assert response['answer'] == 'Grounded answer'
+    assert calls['user_id'] == 'user-a'
+    assert calls['folder_id'] == 'folder-7'
+
+
+def test_rag_query_rejects_empty_selected_folder(monkeypatch):
+    service = __import__('app.services.rag_service', fromlist=['SimpleRAGService']).SimpleRAGService(
+        api_key='test-key'
+    )
+    monkeypatch.setattr(
+        'app.services.rag_service.folder_repository.get',
+        lambda user_id, folder_id: {'id': folder_id, 'paper_ids': []},
+    )
+
+    result = service.query('What method?', 'user-a', folder_id='folder-7')
+
+    assert result.answer == 'The selected folder has no papers to search.'
+    assert result.evidence == []
