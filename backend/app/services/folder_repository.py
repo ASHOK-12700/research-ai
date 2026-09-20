@@ -7,7 +7,7 @@ from app.services.supabase_service import supabase_service
 class FolderRepository:
     def _paper_ids(self, folder_id: str, user_id: str) -> list[str]:
         response = (
-            supabase_service.client.table("folder_papers")
+            supabase_service.table("folder_papers")
             .select("paper_id")
             .eq("folder_id", folder_id)
             .eq("user_id", user_id)
@@ -21,7 +21,7 @@ class FolderRepository:
 
     def list(self, user_id: str) -> list[dict]:
         response = (
-            supabase_service.client.table("folders")
+            supabase_service.table("folders")
             .select("*")
             .eq("user_id", user_id)
             .order("updated_at", desc=True)
@@ -31,7 +31,7 @@ class FolderRepository:
 
     def get(self, user_id: str, folder_id: str) -> dict | None:
         response = (
-            supabase_service.client.table("folders")
+            supabase_service.table("folders")
             .select("*")
             .eq("id", folder_id)
             .eq("user_id", user_id)
@@ -51,7 +51,7 @@ class FolderRepository:
             "created_at": now,
             "updated_at": now,
         }
-        response = supabase_service.client.table("folders").insert(row).execute()
+        response = supabase_service.table("folders").insert(row).execute()
         created = (response.data or [row])[0]
         if paper_ids:
             self.add_papers(user_id, str(created["id"]), paper_ids)
@@ -66,7 +66,7 @@ class FolderRepository:
         if description is not None:
             payload["description"] = description.strip()
         response = (
-            supabase_service.client.table("folders")
+            supabase_service.table("folders")
             .update(payload)
             .eq("id", folder_id)
             .eq("user_id", user_id)
@@ -76,7 +76,7 @@ class FolderRepository:
 
     def delete(self, user_id: str, folder_id: str) -> bool:
         response = (
-            supabase_service.client.table("folders")
+            supabase_service.table("folders")
             .delete()
             .eq("id", folder_id)
             .eq("user_id", user_id)
@@ -88,7 +88,7 @@ class FolderRepository:
         if not self.get(user_id, folder_id):
             return None
         paper_response = (
-            supabase_service.client.table("papers")
+            supabase_service.table("papers")
             .select("id")
             .eq("user_id", user_id)
             .in_("id", list(set(paper_ids)))
@@ -99,13 +99,13 @@ class FolderRepository:
             raise ValueError("One or more papers are not owned by the authenticated user.")
         rows = [{"folder_id": folder_id, "paper_id": paper_id, "user_id": user_id} for paper_id in valid_ids]
         if rows:
-            supabase_service.client.table("folder_papers").upsert(rows, on_conflict="folder_id,paper_id").execute()
+            supabase_service.table("folder_papers").upsert(rows, on_conflict="folder_id,paper_id").execute()
         return self.get(user_id, folder_id)
 
     def remove_paper(self, user_id: str, folder_id: str, paper_id: str) -> dict | None:
         if not self.get(user_id, folder_id):
             return None
-        supabase_service.client.table("folder_papers").delete().eq("folder_id", folder_id).eq("paper_id", paper_id).eq("user_id", user_id).execute()
+        supabase_service.table("folder_papers").delete().eq("folder_id", folder_id).eq("paper_id", paper_id).eq("user_id", user_id).execute()
         return self.get(user_id, folder_id)
 
 

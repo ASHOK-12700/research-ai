@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.routes.papers import get_authenticated_user_id
@@ -5,6 +7,7 @@ from app.schemas.folders import FolderCreate, FolderListResponse, FolderPaperReq
 from app.services.folder_repository import folder_repository
 
 router = APIRouter(prefix="/folders", tags=["Folders"])
+logger = logging.getLogger(__name__)
 
 
 def _user_id(request: Request) -> str:
@@ -32,6 +35,7 @@ async def create_folder(request: Request, folder_data: FolderCreate) -> FolderRe
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except Exception as exc:
+        logger.exception("Folder creation failed")
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Folder could not be created.") from exc
 
 

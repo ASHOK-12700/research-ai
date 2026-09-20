@@ -191,6 +191,37 @@ def test_paper_repository_folder_query_uses_membership_and_owner(monkeypatch):
     assert ('id', ['paper-1']) in paper_query.calls
 
 
+def test_folder_repository_uses_supabase_service_table_api(monkeypatch):
+    from app.services.folder_repository import FolderRepository
+
+    class FolderQuery(_FakeQuery):
+        def insert(self, row):
+            self.rows = [{**row, 'id': 'folder-1'}]
+            return self
+
+    queries = iter([
+        FolderQuery(rows=[{
+            'id': 'folder-1',
+            'user_id': 'user-a',
+            'name': 'Methods',
+            'description': '',
+            'created_at': '2024-01-01T00:00:00Z',
+            'updated_at': '2024-01-01T00:00:00Z',
+        }]),
+        FolderQuery(rows=[]),
+        FolderQuery(rows=[]),
+    ])
+    monkeypatch.setattr(
+        'app.services.folder_repository.supabase_service.table',
+        lambda *_args, **_kwargs: next(queries),
+    )
+
+    folder = FolderRepository().create('user-a', 'Methods', '', [])
+
+    assert folder['id'] == 'folder-1'
+    assert folder['name'] == 'Methods'
+
+
 def test_chat_message_routes_folder_query_to_rag(monkeypatch):
     request = Request({
         'type': 'http',
