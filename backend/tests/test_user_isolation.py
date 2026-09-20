@@ -222,6 +222,31 @@ def test_folder_repository_uses_supabase_service_table_api(monkeypatch):
     assert folder['name'] == 'Methods'
 
 
+def test_project_repository_uses_supabase_service_table_api(monkeypatch):
+    from app.services.project_repository import ProjectRepository
+
+    class ProjectQuery(_FakeQuery):
+        def insert(self, row):
+            self.rows = [{**row, 'id': 'project-1'}]
+            return self
+
+    query = ProjectQuery(rows=[])
+    monkeypatch.setattr(
+        'app.services.project_repository.supabase_service.table',
+        lambda *_args, **_kwargs: query,
+    )
+
+    project = ProjectRepository().create_project(
+        user_id='user-a',
+        title='Methods',
+        topic='AI',
+        description='Test project',
+    )
+
+    assert project['id'] == 'project-1'
+    assert project['title'] == 'Methods'
+
+
 def test_chat_message_routes_folder_query_to_rag(monkeypatch):
     request = Request({
         'type': 'http',

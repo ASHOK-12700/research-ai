@@ -30,7 +30,7 @@ class ProjectRepository:
             "updated_at": now,
         }
         
-        response = supabase_service.client.table("projects").insert(data).execute()
+        response = supabase_service.table("projects").insert(data).execute()
         if response.data:
             return response.data[0]
         raise Exception("Failed to create project")
@@ -38,7 +38,7 @@ class ProjectRepository:
     def get_project(self, user_id: str, project_id: str) -> dict | None:
         """Get a specific project by ID (user-isolated)."""
         response = (
-            supabase_service.client.table("projects")
+            supabase_service.table("projects")
             .select("*, papers(count)")
             .eq("id", project_id)
             .eq("user_id", user_id)
@@ -61,7 +61,7 @@ class ProjectRepository:
         sort_by: str = "created_at",
     ) -> list[dict]:
         """List all projects for a user with optional filtering."""
-        query = supabase_service.client.table("projects").select("*").eq("user_id", user_id)
+        query = supabase_service.table("projects").select("*").eq("user_id", user_id)
         
         if status:
             query = query.eq("status", status)
@@ -134,7 +134,7 @@ class ProjectRepository:
         update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
         
         response = (
-            supabase_service.client.table("projects")
+            supabase_service.table("projects")
             .update(update_data)
             .eq("id", project_id)
             .eq("user_id", user_id)
@@ -150,13 +150,13 @@ class ProjectRepository:
     def delete_project(self, user_id: str, project_id: str) -> bool:
         """Delete a project (user-isolated). Papers are not deleted, just unlinked."""
         # Unlink papers first
-        supabase_service.client.table("papers").update(
+        supabase_service.table("papers").update(
             {"project_id": None}
         ).eq("project_id", project_id).eq("user_id", user_id).execute()
         
         # Delete project
         response = (
-            supabase_service.client.table("projects")
+            supabase_service.table("projects")
             .delete()
             .eq("id", project_id)
             .eq("user_id", user_id)
@@ -167,7 +167,7 @@ class ProjectRepository:
     def _count_papers_in_project(self, project_id: str, user_id: str) -> int:
         """Count papers in a project."""
         response = (
-            supabase_service.client.table("papers")
+            supabase_service.table("papers")
             .select("id", count="exact")
             .eq("project_id", project_id)
             .eq("user_id", user_id)
