@@ -6,7 +6,6 @@ import {
   MessageSquareQuote,
   GitCompare,
   Bookmark,
-  Layers,
   ArrowLeft,
   Share2,
   Heart
@@ -25,7 +24,6 @@ export const PaperDetailPage: React.FC = () => {
   }>();
 
   const [paper, setPaper] = useState<Paper | null>(null);
-  const [related, setRelated] = useState<{ paper: Paper; similarity: number; reason: string }[]>([]);
   const [activeSection, setActiveSection] = useState<string>('analysis-abstract');
   const [loading, setLoading] = useState(true);
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -38,13 +36,9 @@ export const PaperDetailPage: React.FC = () => {
     setLoading(true);
     setSummaryError(null);
     setSummary(null);
-    Promise.all([
-      paperService.getPaperById(paperId),
-      paperService.getRelatedPapers(paperId)
-    ])
-      .then(([pData, rData]) => {
+    paperService.getPaperById(paperId)
+      .then((pData) => {
         setPaper(pData);
-        setRelated(rData);
         setActiveSection('analysis-abstract');
       })
       .finally(() => setLoading(false));
@@ -394,34 +388,9 @@ export const PaperDetailPage: React.FC = () => {
             )}
 
             {!summaryLoading && !summaryError && !summary && (
-              <p className="text-xs text-zinc-500">Summary pending extraction. Click “Generate AI Summary” to create a structured overview.</p>
+              <p className="text-xs text-zinc-500">PDF text and sections are already extracted. Generate an optional AI summary when you want a concise overview.</p>
             )}
           </Card>
-
-          {related.length > 0 && (
-            <Card className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-purple-400" />
-                Related Literature
-              </h3>
-              <div className="space-y-2">
-                {related.map(({ paper: rp, similarity, reason }) => (
-                  <div
-                    key={rp.id}
-                    onClick={() => navigate(`/papers/${rp.id}`)}
-                    className="p-2.5 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 border border-white/5 cursor-pointer transition-colors space-y-1"
-                  >
-                    <div className="flex items-center justify-between text-[10px] font-mono">
-                      <span className="text-zinc-400 truncate max-w-[120px]">{rp.journal}</span>
-                      <span className="text-indigo-400 font-bold">{similarity}% match</span>
-                    </div>
-                    <h4 className="text-xs font-semibold text-zinc-200 line-clamp-1">{rp.title}</h4>
-                    <p className="text-[11px] text-zinc-400 line-clamp-1">{reason}</p>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
         </div>
       </div>
     </div>

@@ -8,14 +8,21 @@ from app.schemas.papers import PaperMetadata, PaperSection
 
 
 _HEADING_GROUPS: dict[str, tuple[str, ...]] = {
-    "problem_statement": ("problem", "problem statement", "research problem", "motivation", "introduction", "background", "research questions"),
+    "problem_statement": ("problem", "problem statement", "research problem", "problem definition", "motivation", "introduction", "background", "research questions", "contributions"),
     "objectives": ("objective", "objectives", "goal", "goals", "aim", "aims", "research questions", "contributions"),
-    "methodology": ("method", "methods", "methodology", "materials and methods", "approach", "proposed method", "implementation", "system architecture", "experimental setup"),
-    "datasets": ("dataset", "datasets", "data", "data used", "corpus", "benchmark", "experimental setup"),
-    "algorithms_models": ("algorithm", "algorithms", "model", "models", "architecture", "proposed approach", "approach", "method"),
-    "major_findings": ("results", "result", "findings", "key findings", "evaluation", "experiments", "experimental results", "discussion", "conclusion", "conclusions"),
+    "methodology": ("method", "methods", "methodology", "materials and methods", "approach", "proposed method", "proposed approach", "implementation", "system architecture", "model architecture", "experimental setup", "models and training"),
+    "datasets": ("dataset", "datasets", "custom dataset", "custom skill dataset", "dataset construction", "data collection", "experimental data", "data", "data used", "corpus", "benchmark", "experimental setup"),
+    "algorithms_models": ("algorithm", "algorithms", "model", "models", "models and training", "training", "model architecture", "architecture", "proposed approach", "approach", "method"),
+    "major_findings": ("results", "result", "findings", "key findings", "evaluation", "evaluation results", "experiments", "experimental results", "results and discussion", "discussion", "conclusion", "conclusions"),
     "limitations": ("limitations", "limitation", "threats to validity", "threats", "weaknesses", "discussion"),
-    "future_work": ("future work", "future directions", "future research", "conclusion", "conclusions", "discussion"),
+    "future_work": ("future work", "future directions", "future research", "limitations and future work", "conclusion", "conclusions", "discussion"),
+}
+
+_CONTENT_MARKERS: dict[str, tuple[str, ...]] = {
+    "datasets": ("dataset", "data set", "data collection", "training data", "test set", "evaluation data", "corpus"),
+    "algorithms_models": ("model", "models", "algorithm", "training", "fine-tun", "neural", "language model", "code completion"),
+    "limitations": ("limitation", "limitations", "threat to validity", "threats to validity", "future work", "future direction", "we plan", "could be improved"),
+    "future_work": ("future work", "future direction", "future research", "we plan", "in the future", "could be extended", "remain to be explored"),
 }
 
 
@@ -60,6 +67,28 @@ def _section_text(paper_id: str, sections: list[PaperSection], aliases: Iterable
     )
 
 
+def _content_evidence(paper_id: str, sections: list[PaperSection], markers: Iterable[str]) -> AnalyzedField:
+    matches: list[tuple[PaperSection, str]] = []
+    marker_list = tuple(marker.casefold() for marker in markers)
+    for section in sections:
+        paragraphs = [part.strip() for part in re.split(r"\n\s*\n", section.content) if part.strip()]
+        for paragraph in paragraphs:
+            if any(marker in paragraph.casefold() for marker in marker_list):
+                matches.append((section, _clean(paragraph)))
+    if not matches:
+        return AnalyzedField()
+    unique: list[tuple[PaperSection, str]] = []
+    seen: set[str] = set()
+    for section, paragraph in matches:
+        if paragraph not in seen:
+            seen.add(paragraph)
+            unique.append((section, paragraph))
+    return AnalyzedField(
+        content="\n\n".join(paragraph for _, paragraph in unique),
+        sources=[PaperSource(paper_id=paper_id, page=section.page_start, section=section.title, snippet=paragraph[:320]) for section, paragraph in unique],
+    )
+
+
 def _abstract(paper_id: str, sections: list[PaperSection]) -> AnalyzedField:
     abstract = _section_text(paper_id, sections, ("abstract", "summary"))
     if abstract.content != NOT_AVAILABLE:
@@ -71,9 +100,15 @@ def _abstract(paper_id: str, sections: list[PaperSection]) -> AnalyzedField:
     return AnalyzedField()
 
 
-def _keywords(metadata: PaperMetadata, full_text: str) -> list[str]:
+def _keywords(metadata: PaperMetadata, sections: list[PaperSection], full_text: str) -> list[str]:
     if metadata.keywords:
         return [_clean(item) for item in metadata.keywords if _clean(item)]
+    keyword_sections = [section for section in sections if re.search(r"\bkeywords?\b|\bkey words\b|\bindex terms?\b", section.title, re.IGNORECASE)]
+    if keyword_sections:
+        raw = _clean(" ".join(section.content for section in keyword_sections)).strip(" .;:")
+        values = [_clean(item) for item in re.split(r"[,;|]", raw) if _clean(item)]
+        if values:
+            return values
     match = re.search(r"(?:keywords?|key words)\s*[:\-]\s*(.+?)(?:\n\s*\n|\.|\b(?:introduction|background)\b)", full_text, re.IGNORECASE | re.DOTALL)
     if not match:
         return []
@@ -106,6 +141,12 @@ def build_paper_analysis(
     for field, aliases in _HEADING_GROUPS.items():
         fields[field] = _section_text(paper_id, normalized_sections, aliases)
 
+    # Papers often put dataset/model details under methodology and discuss
+    # limitations/future work inside conclusions or discussion paragraphs.
+    for field, markers in _CONTENT_MARKERS.items():
+        if not fields[field].sources:
+            fields[field] = _content_evidence(paper_id, normalized_sections, markers)
+
     gaps: list[PaperGap] = []
     gap_sections = [
         (section, "limitation", "Research limitation")
@@ -132,6 +173,6 @@ def build_paper_analysis(
         major_findings=fields["major_findings"],
         limitations=fields["limitations"],
         future_work=fields["future_work"],
-        keywords=_keywords(metadata, full_text),
+        keywords=_keywords(metadata, normalized_sections, full_text),
         research_gaps=gaps,
     )

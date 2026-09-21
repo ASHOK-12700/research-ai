@@ -118,3 +118,33 @@ def test_paper_analysis_does_not_create_sources_without_matching_evidence():
 
     assert analysis.methodology.content == "Not available in this paper."
     assert analysis.methodology.sources == []
+
+
+def test_paper_analysis_handles_custom_dataset_models_and_prose_based_gaps():
+    sections = [
+        PaperSection(id="abstract", title="ABSTRACT", content="We study SKILL code autocompletion.", page_start=1, page_end=1),
+        PaperSection(id="intro", title="INTRODUCTION", content="SKILL developers lack effective code autocompletion tools, motivating this study.", page_start=2, page_end=2),
+        PaperSection(id="data", title="Custom SKILL Dataset", content="We construct a custom SKILL dataset from source programs and completion examples used for training and testing.", page_start=4, page_end=4),
+        PaperSection(id="models", title="Models and Training", content="We train language models and compare neural code completion algorithms using the constructed corpus.", page_start=5, page_end=5),
+        PaperSection(id="results", title="results", content="The experiments show that the proposed models improve code completion quality over the baselines.", page_start=8, page_end=8),
+        PaperSection(id="discussion", title="DISCUSSION", content="A limitation is that the evaluation covers a restricted collection of programs. Future work should evaluate broader projects and additional completion settings.", page_start=9, page_end=9),
+        PaperSection(id="keywords", title="Keywords/Patterns", content="SKILL, code autocompletion, language models, program synthesis", page_start=1, page_end=1),
+    ]
+
+    analysis = build_paper_analysis("skill-paper", PaperMetadata(), sections, "full text")
+
+    assert analysis.problem_statement.content.startswith("SKILL developers")
+    assert "custom SKILL dataset" in analysis.datasets.content
+    assert "language models" in analysis.algorithms_models.content
+    assert analysis.major_findings.content.startswith("The experiments show")
+    assert "limitation" in analysis.limitations.content.casefold()
+    assert "Future work" in analysis.future_work.content
+    assert analysis.keywords == ["SKILL", "code autocompletion", "language models", "program synthesis"]
+    assert all(source.paper_id == "skill-paper" for field in (
+        analysis.problem_statement,
+        analysis.datasets,
+        analysis.algorithms_models,
+        analysis.major_findings,
+        analysis.limitations,
+        analysis.future_work,
+    ) for source in field.sources)
