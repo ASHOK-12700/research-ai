@@ -3,14 +3,23 @@ import { motion } from 'framer-motion';
 import {
   GitCompare,
   Check,
-  Plus,
-  Sparkles
+  Plus
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { paperService } from '../services/paperService';
 import type { Paper } from '../types';
 
 const NOT_AVAILABLE = 'Not available in this paper.';
+
+function normalizeComparisonValue(value: string | undefined): string {
+  if (!value) return NOT_AVAILABLE;
+  const cleaned = value.replace(/\s+/g, ' ').trim();
+  if (!cleaned || cleaned === NOT_AVAILABLE) return NOT_AVAILABLE;
+  const deduped = cleaned.replace(new RegExp(`\\s*\\(\\s*${NOT_AVAILABLE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\)\\s*`, 'g'), '');
+  return deduped.includes(NOT_AVAILABLE)
+    ? deduped.replace(new RegExp(`${NOT_AVAILABLE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'g'), '').trim() || NOT_AVAILABLE
+    : deduped || NOT_AVAILABLE;
+}
 
 function comparisonValue(paper: Paper, key: string): string {
   const analysis = paper.analysis;
@@ -21,7 +30,7 @@ function comparisonValue(paper: Paper, key: string): string {
     methodology: analysis?.methodology.content,
     algorithms: analysis?.algorithmsModels.content,
     dataset: analysis?.datasets.content,
-    experimental_setup: analysis?.methodology.content,
+    experimental_setup: analysis?.experimentalSetup.content,
     results: analysis?.majorFindings.content,
     limitations: analysis?.limitations.content,
     future_work: analysis?.futureWork.content,
@@ -30,14 +39,7 @@ function comparisonValue(paper: Paper, key: string): string {
     year: paper.year > 0 ? String(paper.year) : undefined,
     journal: paper.journal,
   };
-  const value = values[key];
-  return value && value.trim() ? value : NOT_AVAILABLE;
-}
-
-function comparisonNote(paper: Paper): string {
-  return paper.analysis?.researchGaps.length
-    ? `${paper.title}: comparison uses the normalized analysis derived from this paper's stored text.`
-    : `${paper.title}: ${NOT_AVAILABLE}`;
+  return normalizeComparisonValue(values[key]);
 }
 
 export const ComparePage: React.FC = () => {
@@ -177,7 +179,8 @@ export const ComparePage: React.FC = () => {
                         const sourceField = row.key === 'research_problem' ? paper.analysis?.problemStatement :
                           row.key === 'objective' ? paper.analysis?.objectives :
                           row.key === 'abstract' ? paper.analysis?.abstract :
-                          row.key === 'methodology' || row.key === 'experimental_setup' ? paper.analysis?.methodology :
+                          row.key === 'methodology' ? paper.analysis?.methodology :
+                          row.key === 'experimental_setup' ? paper.analysis?.experimentalSetup :
                           row.key === 'algorithms' ? paper.analysis?.algorithmsModels :
                           row.key === 'dataset' ? paper.analysis?.datasets :
                           row.key === 'results' ? paper.analysis?.majorFindings :
@@ -204,28 +207,6 @@ export const ComparePage: React.FC = () => {
         </motion.div>
       )}
 
-      {selectedPapers.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="space-y-6"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-indigo-600/20 border border-indigo-500/30">
-              <Sparkles className="w-5 h-5 text-indigo-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-[#f0f2f7] font-heading">Comparison Notes</h2>
-          </div>
-
-          <Card className="p-4 text-sm text-[#b4b9c7] space-y-2">
-            <p>Comparison notes reflect the extracted evidence available in the selected papers.</p>
-            {selectedPapers.map((paper) => (
-              <p key={paper.id}>{comparisonNote(paper)}</p>
-            ))}
-          </Card>
-        </motion.div>
-      )}
     </motion.div>
   );
 };

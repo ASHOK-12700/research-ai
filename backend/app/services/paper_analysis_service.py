@@ -11,6 +11,7 @@ _HEADING_GROUPS: dict[str, tuple[str, ...]] = {
     "problem_statement": ("problem", "problem statement", "research problem", "problem definition", "motivation", "introduction", "background", "research questions", "contributions"),
     "objectives": ("objective", "objectives", "goal", "goals", "aim", "aims", "research questions", "contributions"),
     "methodology": ("method", "methods", "methodology", "materials and methods", "approach", "proposed method", "proposed approach", "implementation", "system architecture", "model architecture", "experimental setup", "models and training"),
+    "experimental_setup": ("experimental setup", "experiments", "experiment", "evaluation setup", "training setup", "experimental design", "setup", "preprocessing", "evaluation methodology"),
     "datasets": ("dataset", "datasets", "custom dataset", "custom skill dataset", "dataset construction", "data collection", "experimental data", "data", "data used", "corpus", "benchmark", "experimental setup"),
     "algorithms_models": ("algorithm", "algorithms", "model", "models", "models and training", "training", "model architecture", "architecture", "proposed approach", "approach", "method"),
     "major_findings": ("results", "result", "findings", "key findings", "evaluation", "evaluation results", "experiments", "experimental results", "results and discussion", "discussion", "conclusion", "conclusions"),
@@ -19,6 +20,7 @@ _HEADING_GROUPS: dict[str, tuple[str, ...]] = {
 }
 
 _CONTENT_MARKERS: dict[str, tuple[str, ...]] = {
+    "experimental_setup": ("experimental setup", "train on", "trained on", "validate on", "validation set", "baseline", "preprocessing", "evaluation protocol", "protocol", "setup", "benchmarks"),
     "datasets": ("dataset", "data set", "data collection", "training data", "test set", "evaluation data", "corpus"),
     "algorithms_models": ("model", "models", "algorithm", "training", "fine-tun", "neural", "language model", "code completion"),
     "limitations": ("limitation", "limitations", "threat to validity", "threats to validity", "future work", "future direction", "we plan", "could be improved"),
@@ -168,6 +170,7 @@ def build_paper_analysis(
         problem_statement=fields["problem_statement"],
         objectives=fields["objectives"],
         methodology=fields["methodology"],
+        experimental_setup=fields["experimental_setup"],
         datasets=fields["datasets"],
         algorithms_models=fields["algorithms_models"],
         major_findings=fields["major_findings"],

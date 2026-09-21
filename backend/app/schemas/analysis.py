@@ -32,6 +32,7 @@ class PaperAnalysis(BaseModel):
     problem_statement: AnalyzedField = Field(default_factory=AnalyzedField)
     objectives: AnalyzedField = Field(default_factory=AnalyzedField)
     methodology: AnalyzedField = Field(default_factory=AnalyzedField)
+    experimental_setup: AnalyzedField = Field(default_factory=AnalyzedField)
     datasets: AnalyzedField = Field(default_factory=AnalyzedField)
     algorithms_models: AnalyzedField = Field(default_factory=AnalyzedField)
     major_findings: AnalyzedField = Field(default_factory=AnalyzedField)

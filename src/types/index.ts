@@ -82,6 +82,7 @@ export interface PaperAnalysis {
   problemStatement: AnalyzedField;
   objectives: AnalyzedField;
   methodology: AnalyzedField;
+  experimentalSetup: AnalyzedField;
   datasets: AnalyzedField;
   algorithmsModels: AnalyzedField;
   majorFindings: AnalyzedField;

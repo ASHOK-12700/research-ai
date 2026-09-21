@@ -148,3 +148,26 @@ def test_paper_analysis_handles_custom_dataset_models_and_prose_based_gaps():
         analysis.limitations,
         analysis.future_work,
     ) for source in field.sources)
+
+
+def test_paper_analysis_extracts_experimental_setup_from_alt_headings_and_keeps_normalized_fields():
+    sections = [
+        PaperSection(id="intro", title="INTRODUCTION", content="The main problem is that developers need faster code completion for SKILL programs.", page_start=1, page_end=1),
+        PaperSection(id="objective", title="Research Objective", content="Our objective is to improve autocompletion quality for SKILL code generation.", page_start=2, page_end=2),
+        PaperSection(id="methods", title="Method", content="We propose a transformer-based decoder and evaluate it against baseline systems.", page_start=3, page_end=3),
+        PaperSection(id="setup", title="Experimental Setup", content="We train on 40,000 examples, validate on 10,000 examples, and compare with three baseline models.", page_start=4, page_end=4),
+        PaperSection(id="dataset", title="Custom Dataset", content="The custom SKILL dataset contains task descriptions and completion targets.", page_start=5, page_end=5),
+        PaperSection(id="results", title="Evaluation", content="The system improves completion accuracy and reduces latency relative to the baselines.", page_start=6, page_end=6),
+        PaperSection(id="future", title="Conclusion", content="Future work will extend support to larger repositories and more library APIs.", page_start=7, page_end=7),
+    ]
+
+    analysis = build_paper_analysis("exp-paper", PaperMetadata(), sections, "full text")
+
+    assert "developers need faster code completion" in analysis.problem_statement.content
+    assert "improve autocompletion quality" in analysis.objectives.content
+    assert "transformer-based decoder" in analysis.methodology.content
+    assert "40,000 examples" in analysis.experimental_setup.content
+    assert "custom SKILL dataset" in analysis.datasets.content
+    assert "improves completion accuracy" in analysis.major_findings.content
+    assert "Future work" in analysis.future_work.content
+    assert analysis.experimental_setup.sources[0].paper_id == "exp-paper"

@@ -35,6 +35,7 @@ type BackendPaper = {
     problem_statement: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
     objectives: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
     methodology: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
+    experimental_setup: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
     datasets: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
     algorithms_models: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
     major_findings: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
@@ -117,6 +118,7 @@ function mapBackendPaperToFrontendPaper(paper: BackendPaper): Paper {
       problemStatement: mapField(analysis.problem_statement),
       objectives: mapField(analysis.objectives),
       methodology: mapField(analysis.methodology),
+      experimentalSetup: mapField(analysis.experimental_setup),
       datasets: mapField(analysis.datasets),
       algorithmsModels: mapField(analysis.algorithms_models),
       majorFindings: mapField(analysis.major_findings),
