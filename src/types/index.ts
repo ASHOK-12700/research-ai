@@ -61,6 +61,46 @@ export interface ExtractedPaperSummary {
   key_results?: string;
   limitations?: string;
   future_work?: string;
+  problem_statement?: string;
+  datasets?: string;
+  algorithms_models?: string;
+  major_findings?: string;
+  keywords?: string[];
+}
+
+export interface PaperGap {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  page?: number | null;
+  sourceSection?: string | null;
+}
+
+export interface PaperAnalysis {
+  abstract: AnalyzedField;
+  problemStatement: AnalyzedField;
+  objectives: AnalyzedField;
+  methodology: AnalyzedField;
+  datasets: AnalyzedField;
+  algorithmsModels: AnalyzedField;
+  majorFindings: AnalyzedField;
+  limitations: AnalyzedField;
+  futureWork: AnalyzedField;
+  keywords: string[];
+  researchGaps: PaperGap[];
+}
+
+export interface PaperSource {
+  paperId: string;
+  page: number;
+  section: string;
+  snippet: string;
+}
+
+export interface AnalyzedField {
+  content: string;
+  sources: PaperSource[];
 }
 
 export interface Paper {
@@ -82,6 +122,7 @@ export interface Paper {
   sections?: PaperSection[];
   summary?: PaperSummary;
   extractedSummary?: ExtractedPaperSummary;
+  analysis?: PaperAnalysis;
 }
 
 export interface SourceReference {
@@ -127,6 +168,7 @@ export interface ResearchGap {
     snippet: string;
   }[];
   isAiSuggested?: boolean;
+  sourceSection?: string;
 }
 
 export interface ResearchInsight {

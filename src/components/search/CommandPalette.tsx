@@ -121,7 +121,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
                     { title: 'Ask Your Papers', path: '/ask', icon: Search },
                     { title: 'Compare Papers', path: '/compare', icon: FileText },
                     { title: 'Research Gaps', path: '/research-gaps', icon: BookOpenCheck },
-                    { title: 'Citations', path: '/citations', icon: BookOpenCheck }
                   ].map((nav) => (
                     <button
                       key={nav.path}

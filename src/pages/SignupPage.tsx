@@ -90,7 +90,7 @@ export const SignupPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] lg:flex">
       <div className="relative hidden min-h-screen w-full overflow-hidden lg:block lg:w-[48%]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(124,92,255,0.28),_transparent_30%),linear-gradient(135deg,#0b0d12_0%,#0d1117_40%,#07090d_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,#0b171d_0%,#10242b_48%,#081015_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,13,0.18),rgba(7,9,13,0.72))]" />
 
         <div className="relative z-10 flex h-full flex-col justify-between px-10 py-10 xl:px-16">
@@ -129,7 +129,7 @@ export const SignupPage: React.FC = () => {
       </div>
 
       <div className="relative block h-32 w-full overflow-hidden bg-[var(--bg-primary)] lg:hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(124,92,255,0.26),_transparent_28%),linear-gradient(135deg,#0b0d12_0%,#0d1117_40%,#07090d_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,#0b171d_0%,#10242b_48%,#081015_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,13,0.1),rgba(7,9,13,0.52))]" />
       </div>
 
@@ -140,7 +140,7 @@ export const SignupPage: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          <div className="rounded-[28px] border border-[var(--border-default)] bg-[var(--bg-surface)]/75 p-6 shadow-[0_28px_80px_rgba(17,24,39,0.18)] backdrop-blur-xl sm:p-8">
+          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)]/88 p-6 shadow-[var(--shadow-xl)] backdrop-blur-xl sm:p-8">
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}

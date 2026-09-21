@@ -76,7 +76,7 @@ export const LoginPage: React.FC = () => {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(124,92,255,0.28),_transparent_30%),linear-gradient(135deg,#0b0d12_0%,#0d1117_40%,#07090d_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,#0b171d_0%,#10242b_48%,#081015_100%)]" />
         <CondensationBackground className="absolute inset-0 opacity-80" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,13,0.18),rgba(7,9,13,0.72))]" />
       </div>
@@ -123,7 +123,7 @@ export const LoginPage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="w-full max-w-md"
           >
-            <div className="rounded-[28px] border border-[var(--border-default)] bg-[var(--bg-surface)]/75 p-6 shadow-[0_28px_80px_rgba(17,24,39,0.18)] backdrop-blur-xl sm:p-8">
+            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)]/88 p-6 shadow-[var(--shadow-xl)] backdrop-blur-xl sm:p-8">
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}

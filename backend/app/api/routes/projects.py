@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.routes.papers import get_authenticated_user_id
-from app.schemas.projects import ProjectCreate, ProjectListResponse, ProjectResponse, ProjectUpdate
+from app.schemas.projects import ProjectCreate, ProjectListResponse, ProjectPaperRequest, ProjectResponse, ProjectUpdate
 from app.services.project_repository import project_repository
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
@@ -147,3 +147,31 @@ async def delete_project(request: Request, project_id: str) -> None:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete project",
         ) from exc
+
+
+@router.post("/{project_id}/papers", response_model=ProjectResponse)
+async def add_project_paper(request: Request, project_id: str, payload: ProjectPaperRequest) -> ProjectResponse:
+    try:
+        user_id = get_authenticated_user_id(request.headers.get("Authorization"))
+        if not project_repository.add_paper(user_id, project_id, payload.paper_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project or paper not found")
+        project = project_repository.get_project(user_id, project_id)
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+        return ProjectResponse(**project)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+
+
+@router.delete("/{project_id}/papers/{paper_id}", response_model=ProjectResponse)
+async def remove_project_paper(request: Request, project_id: str, paper_id: str) -> ProjectResponse:
+    try:
+        user_id = get_authenticated_user_id(request.headers.get("Authorization"))
+        if not project_repository.remove_paper(user_id, project_id, paper_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project or paper association not found")
+        project = project_repository.get_project(user_id, project_id)
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+        return ProjectResponse(**project)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc

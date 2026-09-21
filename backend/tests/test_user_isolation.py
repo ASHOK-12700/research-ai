@@ -247,6 +247,45 @@ def test_project_repository_uses_supabase_service_table_api(monkeypatch):
     assert project['title'] == 'Methods'
 
 
+def test_project_repository_add_paper_requires_same_owner(monkeypatch):
+    from app.services.project_repository import ProjectRepository
+
+    calls = []
+
+    class Query(_FakeQuery):
+        def update(self, payload):
+            calls.append(payload)
+            self.rows = [{'id': 'paper-1'}]
+            return self
+
+    query = Query(rows=[{'id': 'paper-1'}])
+    repo = ProjectRepository()
+    monkeypatch.setattr(repo, 'get_project', lambda user_id, project_id: {'id': project_id, 'user_id': user_id})
+    monkeypatch.setattr('app.services.project_repository.supabase_service.table', lambda *_args, **_kwargs: query)
+
+    assert repo.add_paper('user-a', 'project-a', 'paper-1') is True
+    assert calls == [{'project_id': 'project-a'}]
+    assert ('user_id', 'user-a') in query.calls
+
+
+def test_project_repository_remove_paper_scopes_project_and_owner(monkeypatch):
+    from app.services.project_repository import ProjectRepository
+
+    class Query(_FakeQuery):
+        def update(self, payload):
+            self.rows = [{'id': 'paper-1'}]
+            return self
+
+    query = Query(rows=[])
+    repo = ProjectRepository()
+    monkeypatch.setattr(repo, 'get_project', lambda user_id, project_id: {'id': project_id, 'user_id': user_id})
+    monkeypatch.setattr('app.services.project_repository.supabase_service.table', lambda *_args, **_kwargs: query)
+
+    assert repo.remove_paper('user-a', 'project-a', 'paper-1') is True
+    assert ('project_id', 'project-a') in query.calls
+    assert ('user_id', 'user-a') in query.calls
+
+
 def test_chat_message_routes_folder_query_to_rag(monkeypatch):
     request = Request({
         'type': 'http',

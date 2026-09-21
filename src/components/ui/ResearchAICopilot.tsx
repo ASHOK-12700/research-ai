@@ -91,16 +91,16 @@ export const ResearchAICopilot: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.97 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="mb-4 w-[min(92vw,420px)] overflow-hidden rounded-2xl border border-[var(--border-accent)] bg-[rgba(10,12,18,0.88)] shadow-[0_20px_60px_rgba(92,76,255,0.28)] backdrop-blur-xl flex flex-col max-h-[70vh]"
+            className="mb-4 w-[min(92vw,420px)] overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)]/95 shadow-[var(--shadow-xl)] backdrop-blur-xl flex flex-col max-h-[70vh]"
           >
-            <div className="flex items-center justify-between border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(124,92,255,0.18),_transparent_50%)] px-4 py-3 shrink-0">
+            <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-4 py-3 shrink-0">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full border border-violet-400/40 bg-violet-500/10 text-violet-200">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-accent)] bg-[var(--accent-primary)]/10 text-[var(--accent-tertiary)]">
                   <Bot className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-white">ResearchAI Copilot</div>
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-violet-200/70">Official Assistant</div>
+                  <div className="text-sm font-semibold text-[var(--text-primary)]">ResearchAI Copilot</div>
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Workspace assistant</div>
                 </div>
               </div>
               <div className="flex items-center gap-1">
@@ -125,12 +125,12 @@ export const ResearchAICopilot: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-              <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3 text-sm text-slate-200">
-                <div className="mb-1 flex items-center gap-2 font-medium text-violet-200">
+              <div className="rounded-xl border border-[var(--border-accent)] bg-[var(--accent-primary)]/7 p-3 text-sm text-[var(--text-secondary)]">
+                <div className="mb-1 flex items-center gap-2 font-medium text-[var(--accent-tertiary)]">
                   <Sparkles className="h-4 w-4" />
                   ResearchAI Assistant
                 </div>
-                <p className="text-xs leading-5 text-slate-300">
+                  <p className="text-xs leading-5 text-[var(--text-secondary)]">
                   I can help you understand ResearchAI features, provide step-by-step guidance, and answer questions about the app.
                 </p>
               </div>
@@ -141,8 +141,8 @@ export const ResearchAICopilot: React.FC = () => {
                     <div
                       className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-6 ${
                         message.sender === "user"
-                          ? "bg-violet-500 text-white shadow-[0_10px_24px_rgba(124,92,255,0.28)]"
-                          : "border border-white/10 bg-white/5 text-slate-200"
+                          ? "bg-[var(--accent-primary)] text-white shadow-sm"
+                          : "border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-secondary)]"
                       } whitespace-pre-wrap break-words`}
                     >
                       {message.text}
@@ -188,8 +188,8 @@ export const ResearchAICopilot: React.FC = () => {
               )}
             </div>
 
-            <div className="border-t border-white/10 px-3 py-3 shrink-0">
-              <div className="flex items-end gap-2 rounded-xl border border-white/10 bg-black/20 p-2">
+              <div className="border-t border-[var(--border-subtle)] px-3 py-3 shrink-0">
+            <div className="flex items-end gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--bg-primary)]/60 p-2">
                 <textarea
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
@@ -207,7 +207,7 @@ export const ResearchAICopilot: React.FC = () => {
                   type="button"
                   onClick={() => handleSend()}
                   disabled={!input.trim() || isLoading}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500 text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-primary)] text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label="Send message"
                 >
                   <Send className="h-4 w-4" />
@@ -224,7 +224,7 @@ export const ResearchAICopilot: React.FC = () => {
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setIsOpen((value) => !value)}
-        className="flex h-14 w-14 items-center justify-center rounded-full border border-violet-400/40 bg-[radial-gradient(circle_at_top,_rgba(124,92,255,0.35),_rgba(17,24,39,0.95))] text-white shadow-[0_18px_40px_rgba(124,92,255,0.35)] transition hover:shadow-[0_22px_50px_rgba(124,92,255,0.45)]"
+        className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border-accent)] bg-[var(--accent-primary)] text-white shadow-[var(--shadow-lg)] transition hover:brightness-110"
       >
         <div className="flex flex-col items-center justify-center">
           <MessageSquareText className="h-5 w-5" />

@@ -175,5 +175,40 @@ class ProjectRepository:
         )
         return response.count or 0
 
+    def add_paper(self, user_id: str, project_id: str, paper_id: str) -> bool:
+        if not self.get_project(user_id, project_id):
+            return False
+        paper = (
+            supabase_service.table("papers")
+            .select("id")
+            .eq("id", paper_id)
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+        if not paper.data:
+            return False
+        response = (
+            supabase_service.table("papers")
+            .update({"project_id": project_id})
+            .eq("id", paper_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+        return bool(response.data)
+
+    def remove_paper(self, user_id: str, project_id: str, paper_id: str) -> bool:
+        if not self.get_project(user_id, project_id):
+            return False
+        response = (
+            supabase_service.table("papers")
+            .update({"project_id": None})
+            .eq("id", paper_id)
+            .eq("project_id", project_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+        return bool(response.data)
+
 
 project_repository = ProjectRepository()

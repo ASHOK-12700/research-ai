@@ -24,7 +24,7 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       className={cn(
-        'rounded-lg transition-all duration-300 p-6',
+        'rounded-xl transition-all duration-300 p-6',
         variants[variant],
         hoverEffect && 'hover:border-[var(--border-accent)] hover:shadow-lg hover:shadow-[var(--accent-primary)]/10 hover:bg-[var(--bg-elevated)]',
         glow && 'border-[var(--border-accent)] shadow-lg shadow-[var(--accent-primary)]/10 bg-[var(--bg-surface)]',

@@ -190,7 +190,7 @@ export const AskPapersPage: React.FC = () => {
               id="ask-papers-folder"
               value={selectedFolderId}
               onChange={(event) => handleFolderChange(event.target.value)}
-              className="w-full rounded-lg bg-[#121820] border border-white/10 px-3 py-2.5 text-sm text-[#f0f2f7] focus:outline-none focus:border-indigo-500/50"
+              className="research-select w-full px-3 py-2.5 text-sm"
             >
               <option value="">Select a research folder</option>
               {folders.map((folder) => (

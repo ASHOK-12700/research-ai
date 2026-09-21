@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="dashboard-header sticky top-0 z-20 flex items-center justify-between h-16 px-4 md:px-6 bg-[rgba(10,14,21,0.44)] backdrop-blur-xl border-b border-[var(--border-subtle)] shadow-sm">
+    <header className="dashboard-header sticky top-0 z-20 flex items-center justify-between h-[4.5rem] px-4 md:px-7 bg-[rgba(11,21,28,0.68)] backdrop-blur-xl border-b border-[var(--border-subtle)] shadow-sm">
       {/* Left: Mobile Menu & Search Trigger */}
       <div className="flex items-center gap-3">
         <button
@@ -44,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Global Search Bar Trigger - Premium Styling */}
         <button
           onClick={onOpenSearch}
-          className="flex items-center gap-3 px-4 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-default)] hover:border-[var(--border-accent)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-200 shadow-sm w-48 sm:w-64 md:w-80 group"
+          className="flex items-center gap-3 px-4 py-2.5 text-sm bg-[var(--bg-surface)]/80 border border-[var(--border-default)] hover:border-[var(--border-accent)] rounded-[0.65rem] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-200 shadow-sm w-48 sm:w-64 md:w-80 group"
         >
           <Search className="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] shrink-0 transition-colors" />
           <span className="truncate text-xs sm:text-sm">Search papers, projects, gaps...</span>
@@ -95,7 +95,7 @@ export const Header: React.FC<HeaderProps> = ({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
                 transition={{ duration: 0.15, ease: [0.34, 1.56, 0.64, 1] }}
-                className="absolute right-0 mt-2 w-96 bg-[var(--bg-surface)]/95 backdrop-blur-xl border border-[var(--border-default)] rounded-xl shadow-2xl shadow-[rgba(15,23,42,0.18)] p-4 z-50"
+                className="absolute right-0 mt-2 w-96 bg-[var(--bg-surface)]/95 backdrop-blur-xl border border-[var(--border-default)] rounded-xl shadow-2xl p-4 z-50"
               >
                 <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10">
                   <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-primary)]">Notifications</h4>

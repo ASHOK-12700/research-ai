@@ -30,11 +30,17 @@ export const ProjectsPage: React.FC = () => {
   const [newTopic, setNewTopic] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchProjects = () => {
     setLoading(true);
+    setError(null);
     projectService.getProjects().then((data) => {
       setProjects(data);
+      setLoading(false);
+    }).catch((loadError) => {
+      setProjects([]);
+      setError(loadError instanceof Error ? loadError.message : 'Unable to load research projects.');
       setLoading(false);
     });
   };
@@ -47,17 +53,14 @@ export const ProjectsPage: React.FC = () => {
     e.preventDefault();
     if (!newTitle.trim()) return;
     setSubmitting(true);
-    await projectService.createProject({
-      title: newTitle,
-      topic: newTopic || 'General AI Research',
-      description: newDesc
-    });
-    setSubmitting(false);
-    setCreateModalOpen(false);
-    setNewTitle('');
-    setNewTopic('');
-    setNewDesc('');
-    fetchProjects();
+    try {
+      await projectService.createProject({ title: newTitle, topic: newTopic || 'General AI Research', description: newDesc });
+      setCreateModalOpen(false);
+      setNewTitle(''); setNewTopic(''); setNewDesc('');
+      await fetchProjects();
+    } catch (createError) {
+      setError(createError instanceof Error ? createError.message : 'Unable to create research project.');
+    } finally { setSubmitting(false); }
   };
 
   const filteredProjects = projects
@@ -102,6 +105,7 @@ export const ProjectsPage: React.FC = () => {
       </div>
 
       {/* Controls Bar */}
+      {error && <Card className="border-red-500/30 bg-red-500/10"><p className="text-sm text-red-300">{error}</p></Card>}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-[#121520] border border-white/10">
         {/* Search */}
         <div className="relative w-full md:w-80">
@@ -111,7 +115,7 @@ export const ProjectsPage: React.FC = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search projects by title or topic..."
-            className="w-full pl-9 pr-4 py-2 bg-zinc-900 border border-white/10 rounded-lg text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+            className="research-input w-full pl-9 pr-4 py-2 text-sm placeholder:text-[var(--text-muted)]"
           />
         </div>
 
@@ -138,7 +142,7 @@ export const ProjectsPage: React.FC = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-zinc-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-zinc-200 focus:outline-none"
+              className="research-select px-2.5 py-1.5 text-sm"
             >
               <option value="recent">Recently updated</option>
               <option value="papers">Most papers</option>

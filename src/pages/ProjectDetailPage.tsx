@@ -7,12 +7,10 @@ import {
   MessageSquareQuote,
   GitCompare,
   Lightbulb,
-  BookOpenCheck,
   Clock,
   Edit,
   Upload,
   Sparkles,
-  BarChart2,
   ArrowLeft
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
@@ -33,6 +31,13 @@ export const ProjectDetailPage: React.FC = () => {
 
   const [project, setProject] = useState<ResearchProject | null>(null);
   const [papers, setPapers] = useState<Paper[]>([]);
+  const [allPapers, setAllPapers] = useState<Paper[]>([]);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editTopic, setEditTopic] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [selectedPaperId, setSelectedPaperId] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
 
@@ -41,14 +46,67 @@ export const ProjectDetailPage: React.FC = () => {
       setLoading(true);
       Promise.all([
         projectService.getProjectById(projectId),
-        paperService.getPapers(projectId)
-      ]).then(([projData, paperData]) => {
+        paperService.getPapers(projectId),
+        paperService.getPapers()
+      ]).then(([projData, paperData, libraryData]) => {
         setProject(projData);
         setPapers(paperData);
+        setAllPapers(libraryData);
+        setLoading(false);
+      }).catch((error) => {
+        setActionError(error instanceof Error ? error.message : 'Unable to load this project.');
         setLoading(false);
       });
     }
   }, [projectId, papersRefreshToken]);
+
+  const refreshProject = async () => {
+    if (!projectId) return;
+    const [nextProject, projectPapers, libraryPapers] = await Promise.all([
+      projectService.getProjectById(projectId),
+      paperService.getPapers(projectId),
+      paperService.getPapers()
+    ]);
+    setProject(nextProject);
+    setPapers(projectPapers);
+    setAllPapers(libraryPapers);
+  };
+
+  const openEdit = () => {
+    if (!project) return;
+    setEditTitle(project.title);
+    setEditTopic(project.topic);
+    setEditDescription(project.description);
+    setEditOpen(true);
+  };
+
+  const saveEdit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!projectId || !editTitle.trim()) return;
+    try {
+      await projectService.updateProject(projectId, { title: editTitle.trim(), topic: editTopic.trim(), description: editDescription.trim() });
+      setEditOpen(false);
+      await refreshProject();
+    } catch (error) { setActionError(error instanceof Error ? error.message : 'Unable to update project.'); }
+  };
+
+  const deleteCurrentProject = async () => {
+    if (!projectId || !window.confirm('Delete this project? Uploaded papers will remain in your library.')) return;
+    try { await projectService.deleteProject(projectId); navigate('/projects'); }
+    catch (error) { setActionError(error instanceof Error ? error.message : 'Unable to delete project.'); }
+  };
+
+  const addPaper = async () => {
+    if (!projectId || !selectedPaperId) return;
+    try { await projectService.addPaper(projectId, selectedPaperId); setSelectedPaperId(''); await refreshProject(); }
+    catch (error) { setActionError(error instanceof Error ? error.message : 'Unable to add paper.'); }
+  };
+
+  const removePaper = async (paperId: string) => {
+    if (!projectId) return;
+    try { await projectService.removePaper(projectId, paperId); await refreshProject(); }
+    catch (error) { setActionError(error instanceof Error ? error.message : 'Unable to remove paper.'); }
+  };
 
   if (loading) {
     return (
@@ -76,7 +134,6 @@ export const ProjectDetailPage: React.FC = () => {
     { id: 'ask', label: 'Ask', icon: <MessageSquareQuote className="w-4 h-4" /> },
     { id: 'compare', label: 'Compare', icon: <GitCompare className="w-4 h-4" /> },
     { id: 'gaps', label: 'Research Gaps', count: project.gapCount, icon: <Lightbulb className="w-4 h-4" /> },
-    { id: 'citations', label: 'Citations', icon: <BookOpenCheck className="w-4 h-4" /> },
     { id: 'timeline', label: 'Timeline', icon: <Clock className="w-4 h-4" /> }
   ];
 
@@ -123,9 +180,11 @@ export const ProjectDetailPage: React.FC = () => {
               variant="secondary"
               size="md"
               icon={<Edit className="w-5 h-5" />}
+              onClick={openEdit}
             >
               Edit Project
             </Button>
+            <Button variant="outline" size="md" onClick={deleteCurrentProject}>Delete Project</Button>
             <Button
               variant="primary"
               size="md"
@@ -163,6 +222,8 @@ export const ProjectDetailPage: React.FC = () => {
         </div>
       </motion.div>
 
+      {actionError && <Card className="border-red-500/30 bg-red-500/10"><p className="text-sm text-red-300">{actionError}</p></Card>}
+
       {/* Tab Contents with Animations */}
       {activeTab === 'overview' && (
         <motion.div
@@ -186,13 +247,11 @@ export const ProjectDetailPage: React.FC = () => {
             </div>
           </Card>
 
-          {/* Statistics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { label: 'Total Analyzed Papers', value: `${papers.length || project.paperCount}`, sub: '100% Extracted' },
-              { label: 'Literature Time Horizon', value: papers.length ? `${Math.min(...papers.map((paper) => paper.year))} – ${Math.max(...papers.map((paper) => paper.year))}` : 'No data', sub: papers.length ? 'From uploaded metadata' : 'Upload papers to calculate' },
-              { label: 'Dominant Methodology', value: papers.length ? 'See extracted sections' : 'No data', sub: 'Derived from uploaded papers' },
-              { label: 'Primary Dataset', value: papers.length ? 'See extracted sections' : 'No data', sub: 'Derived from uploaded papers' }
+              { label: 'Associated papers', value: `${papers.length}`, sub: 'Selected from your library' },
+              { label: 'Project status', value: project.status, sub: 'Owned by your account' },
+              { label: 'Last updated', value: project.updatedAt, sub: 'Project metadata' }
             ].map((stat, i) => (
               <motion.div
                 key={i}
@@ -207,57 +266,6 @@ export const ProjectDetailPage: React.FC = () => {
                 </Card>
               </motion.div>
             ))}
-          </div>
-
-          {/* Methodology & Findings Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Methodology Distribution */}
-            <Card className="space-y-4 p-6">
-              <h3 className="text-base font-bold text-[#f0f2f7] flex items-center gap-2 font-heading">
-                <BarChart2 className="w-5 h-5 text-sky-400" />
-                Methodology Distribution
-              </h3>
-              <div className="space-y-4">
-                {[
-                  { name: 'Shifted-Window Transformers', percentage: 45, count: '5 Papers' },
-                  { name: 'Residual CNN Architectures', percentage: 30, count: '3 Papers' },
-                  { name: 'Mobile Inverted Bottlenecks', percentage: 15, count: '2 Papers' },
-                  { name: 'Multimodal LLM Prompt Scaffolds', percentage: 10, count: '1 Paper' }
-                ].map((m, idx) => (
-                  <div key={idx} className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-xs text-[#b4b9c7] font-medium">{m.name}</span>
-                      <span className="text-xs font-mono text-[#7d8599]">{m.percentage}%</span>
-                    </div>
-                    <div className="w-full bg-[#121820] rounded-full h-2 overflow-hidden border border-white/10">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${m.percentage}%` }}
-                        transition={{ duration: 0.8, delay: idx * 0.1 }}
-                        className="h-2 bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Key Findings */}
-            <Card className="space-y-4 p-6">
-              <h3 className="text-base font-bold text-[#f0f2f7] flex items-center gap-2 font-heading">
-                <Lightbulb className="w-5 h-5 text-amber-400" />
-                Evidence-Based Key Findings
-              </h3>
-              <div className="space-y-3">
-                {papers.slice(0, 3).map((paper) => (
-                  <div key={paper.id} className="p-3 rounded-lg bg-[#0f131a] border border-white/10 hover:border-indigo-500/30 transition-colors space-y-1.5">
-                    <h4 className="text-xs font-bold text-[#f0f2f7]">{paper.title}</h4>
-                    <p className="text-xs text-[#b4b9c7] italic">"{paper.sections?.[0]?.content?.slice(0, 300) || 'No extracted evidence available.'}"</p>
-                  </div>
-                ))}
-                {!papers.length && <p className="text-sm text-zinc-400">Upload papers to derive findings.</p>}
-              </div>
-            </Card>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -279,7 +287,7 @@ export const ProjectDetailPage: React.FC = () => {
                 >
                   {paper.title}
                 </h3>
-                <p className="text-xs text-[#7d8599] line-clamp-2">{paper.abstract}</p>
+                <p className="text-xs text-[#7d8599] line-clamp-2">{paper.analysis?.abstract.content || 'Not available in this paper.'}</p>
                 <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs">
                   <span className="text-[#7d8599] font-mono">{paper.authors[0]} ({paper.year})</span>
                   <button
@@ -293,6 +301,18 @@ export const ProjectDetailPage: React.FC = () => {
             </motion.div>
           ))}
           </div>
+
+          <Card className="space-y-4 p-6">
+            <h3 className="text-base font-bold text-[#f0f2f7] font-heading">Associate existing papers</h3>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <select value={selectedPaperId} onChange={(event) => setSelectedPaperId(event.target.value)} className="research-select flex-1 px-3 py-2 text-sm">
+                <option value="">Select a paper from your library</option>
+                {allPapers.filter((paper) => !papers.some((current) => current.id === paper.id)).map((paper) => <option key={paper.id} value={paper.id}>{paper.title}</option>)}
+              </select>
+              <Button onClick={addPaper} disabled={!selectedPaperId}>Add paper</Button>
+            </div>
+            {papers.length === 0 ? <p className="text-sm text-zinc-400">No papers are associated with this project yet.</p> : <div className="space-y-2"><h4 className="text-sm font-semibold text-[#f0f2f7]">Associated papers</h4>{papers.map((paper) => <div key={paper.id} className="flex items-center justify-between gap-3 border-b border-white/10 py-2"><button onClick={() => navigate(`/papers/${paper.id}`)} className="truncate text-left text-sm text-indigo-300 hover:underline">{paper.title}</button><Button variant="ghost" size="xs" onClick={() => removePaper(paper.id)}>Remove</Button></div>)}</div>}
+          </Card>
         </motion.div>
       )}
 
@@ -339,24 +359,24 @@ export const ProjectDetailPage: React.FC = () => {
         </motion.div>
       )}
 
-      {activeTab === 'citations' && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-          <Card className="p-8 text-center space-y-4">
-            <h3 className="text-lg font-bold text-[#f0f2f7] font-heading">Export References</h3>
-            <p className="text-sm text-[#b4b9c7] max-w-md mx-auto">
-              Export APA, IEEE, MLA, Chicago, or BibTeX references for all papers in this project.
-            </p>
-            <Button variant="primary" onClick={() => navigate('/citations')}>
-              Open Citation Manager
-            </Button>
-          </Card>
-        </motion.div>
-      )}
-
       {activeTab === 'timeline' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
           <ResearchTimeline papers={papers} />
         </motion.div>
+      )}
+
+      {editOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <Card className="w-full max-w-lg space-y-4">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Edit research project</h2>
+            <form onSubmit={saveEdit} className="space-y-4">
+              <input value={editTitle} onChange={(event) => setEditTitle(event.target.value)} required className="research-input w-full px-3 py-2 text-sm" placeholder="Project title" />
+              <input value={editTopic} onChange={(event) => setEditTopic(event.target.value)} className="research-input w-full px-3 py-2 text-sm" placeholder="Research topic" />
+              <textarea value={editDescription} onChange={(event) => setEditDescription(event.target.value)} rows={4} className="research-textarea w-full px-3 py-2 text-sm" placeholder="Description or objective" />
+              <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button><Button type="submit">Save changes</Button></div>
+            </form>
+          </Card>
+        </div>
       )}
     </div>
   );

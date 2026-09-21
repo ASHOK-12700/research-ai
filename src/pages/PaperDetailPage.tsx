@@ -26,7 +26,7 @@ export const PaperDetailPage: React.FC = () => {
 
   const [paper, setPaper] = useState<Paper | null>(null);
   const [related, setRelated] = useState<{ paper: Paper; similarity: number; reason: string }[]>([]);
-  const [activeSection, setActiveSection] = useState<string>('sec-1');
+  const [activeSection, setActiveSection] = useState<string>('analysis-abstract');
   const [loading, setLoading] = useState(true);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
@@ -45,10 +45,7 @@ export const PaperDetailPage: React.FC = () => {
       .then(([pData, rData]) => {
         setPaper(pData);
         setRelated(rData);
-        if (pData?.sections && pData.sections[0]) {
-          const abstract = pData.sections.find((section) => section.title.trim().toLowerCase() === 'abstract');
-          setActiveSection(abstract?.id || pData.sections[0].id);
-        }
+        setActiveSection('analysis-abstract');
       })
       .finally(() => setLoading(false));
   }, [paperId]);
@@ -148,6 +145,16 @@ export const PaperDetailPage: React.FC = () => {
   }
 
   const activePaperSection = paper.sections?.find((section) => section.id === activeSection) || paper.sections?.[0];
+  const analysisSections = [
+    { id: 'analysis-abstract', label: 'Abstract', field: paper.analysis?.abstract, content: paper.analysis?.abstract.content || paper.abstract },
+    { id: 'analysis-problem', label: 'Problem Statement', field: paper.analysis?.problemStatement, content: paper.analysis?.problemStatement.content },
+    { id: 'analysis-methodology', label: 'Methodology', field: paper.analysis?.methodology, content: paper.analysis?.methodology.content },
+    { id: 'analysis-datasets', label: 'Datasets', field: paper.analysis?.datasets, content: paper.analysis?.datasets.content },
+    { id: 'analysis-models', label: 'Algorithms / Models', field: paper.analysis?.algorithmsModels, content: paper.analysis?.algorithmsModels.content },
+    { id: 'analysis-findings', label: 'Major Findings', field: paper.analysis?.majorFindings, content: paper.analysis?.majorFindings.content },
+    { id: 'analysis-limitations', label: 'Limitations', field: paper.analysis?.limitations, content: paper.analysis?.limitations.content },
+    { id: 'analysis-future', label: 'Future Work', field: paper.analysis?.futureWork, content: paper.analysis?.futureWork.content },
+  ];
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
@@ -238,6 +245,19 @@ export const PaperDetailPage: React.FC = () => {
               Table of Contents
             </h3>
             <div className="space-y-1">
+              {analysisSections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer ${
+                    activeSection === section.id ? 'bg-indigo-600/20 text-indigo-300 font-bold border-l-2 border-indigo-500' : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                  }`}
+                >
+                  <span className="truncate">{section.label}</span>
+                  <span className="text-[10px] text-zinc-500 font-mono">analysis</span>
+                </button>
+              ))}
+              <div className="my-3 border-t border-white/10" />
               {paper.sections?.map((sec) => (
                 <button
                   key={sec.id}
@@ -257,7 +277,52 @@ export const PaperDetailPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-6 space-y-6">
-          <Card className="space-y-6 p-6 sm:p-8">
+          {activeSection.startsWith('analysis-') ? (
+            <Card className="dashboard-glass space-y-6 p-6 sm:p-8">
+              {(() => {
+                const section = analysisSections.find((item) => item.id === activeSection) || analysisSections[0];
+                return (
+                  <>
+                    <div className="border-b border-white/10 pb-4">
+                      <h2 className="text-lg font-bold text-zinc-100 font-heading">{section.label}</h2>
+                      <p className="text-xs text-zinc-400 mt-0.5">Normalized from the complete extracted paper content</p>
+                    </div>
+                    {section.content && section.content !== 'Not available in this paper.'
+                      ? <p className="text-sm text-zinc-300 leading-7 whitespace-pre-wrap">{section.content}</p>
+                      : <p className="text-sm text-zinc-400">Not available in this paper.</p>}
+                    {section.field?.sources.length ? (
+                      <div className="border-t border-white/10 pt-4 space-y-2">
+                        <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Source evidence</span>
+                        <div className="flex flex-wrap gap-2">
+                          {section.field.sources.map((source) => (
+                            <button
+                              key={`${source.paperId}-${source.page}-${source.section}`}
+                              type="button"
+                              onClick={() => onOpenEvidence({ paperId: source.paperId, paperTitle: paper.title, page: source.page, section: source.section, snippet: source.snippet })}
+                              className="text-xs text-[var(--accent-tertiary)] hover:underline"
+                            >
+                              [Source: p.{source.page}, {source.section}]
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                    {section.id === 'analysis-abstract' && (
+                      <div className="border-t border-white/10 pt-5">
+                        <h3 className="text-sm font-semibold text-zinc-100">Keywords</h3>
+                        {paper.analysis?.keywords?.length ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {paper.analysis.keywords.map((keyword) => <Badge key={keyword} variant="indigo">{keyword}</Badge>)}
+                          </div>
+                        ) : <p className="mt-2 text-sm text-zinc-400">Not available in this paper.</p>}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </Card>
+          ) : (
+          <Card className="dashboard-glass space-y-6 p-6 sm:p-8">
             <div className="border-b border-white/10 pb-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -272,6 +337,7 @@ export const PaperDetailPage: React.FC = () => {
               {activePaperSection ? renderStructuredText(activePaperSection.content) : <p className="text-sm text-zinc-400">Not available in this paper.</p>}
             </div>
           </Card>
+          )}
         </div>
 
         <div className="lg:col-span-3 space-y-6">

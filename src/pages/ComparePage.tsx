@@ -10,38 +10,33 @@ import { Card } from '../components/ui/Card';
 import { paperService } from '../services/paperService';
 import type { Paper } from '../types';
 
-const NOT_AVAILABLE = 'Not available in this paper';
-
-function extractedSection(paper: Paper, pattern: RegExp): string | undefined {
-  return paper.sections?.find((section) => pattern.test(section.title))?.content;
-}
+const NOT_AVAILABLE = 'Not available in this paper.';
 
 function comparisonValue(paper: Paper, key: string): string {
-  const summary = paper.extractedSummary;
+  const analysis = paper.analysis;
   const values: Record<string, string | undefined> = {
-    research_problem: summary?.research_problem || extractedSection(paper, /problem|introduction|motivation/i),
-    objectives: summary?.objectives || extractedSection(paper, /objective|goal|aim/i),
-    abstract: summary?.abstract_overview || paper.abstract,
-    methodology: summary?.methodology || extractedSection(paper, /method|approach|experiment|material/i),
-    algorithms: summary?.proposed_approach_model || extractedSection(paper, /algorithm|model|architecture|approach/i),
-    dataset: summary?.dataset_data_used || extractedSection(paper, /dataset|data|corpus|benchmark/i),
-    results: summary?.key_results || extractedSection(paper, /result|finding|evaluation/i),
-    limitations: summary?.limitations || extractedSection(paper, /limitation|threat/i),
-    future_work: summary?.future_work || extractedSection(paper, /future|conclusion|discussion/i),
+    research_problem: analysis?.problemStatement.content,
+    objective: analysis?.objectives.content,
+    abstract: analysis?.abstract.content || paper.abstract,
+    methodology: analysis?.methodology.content,
+    algorithms: analysis?.algorithmsModels.content,
+    dataset: analysis?.datasets.content,
+    experimental_setup: analysis?.methodology.content,
+    results: analysis?.majorFindings.content,
+    limitations: analysis?.limitations.content,
+    future_work: analysis?.futureWork.content,
+    keywords: analysis?.keywords.join(', '),
     authors: paper.authors?.filter((author) => author && author !== 'Unknown Author').join(', '),
     year: paper.year > 0 ? String(paper.year) : undefined,
     journal: paper.journal,
-    references: extractedSection(paper, /reference|bibliograph|citation/i),
-    tags: paper.tags?.join(' • '),
   };
   const value = values[key];
   return value && value.trim() ? value : NOT_AVAILABLE;
 }
 
 function comparisonNote(paper: Paper): string {
-  const availableSections = paper.sections?.map((section) => section.title).filter(Boolean) || [];
-  return availableSections.length > 0
-    ? `${paper.title}: extracted sections available include ${availableSections.join(', ')}.`
+  return paper.analysis?.researchGaps.length
+    ? `${paper.title}: comparison uses the normalized analysis derived from this paper's stored text.`
     : `${paper.title}: ${NOT_AVAILABLE}`;
 }
 
@@ -72,18 +67,16 @@ export const ComparePage: React.FC = () => {
 
   const rows = [
     { label: 'Research Problem', key: 'research_problem' },
-    { label: 'Objective', key: 'objectives' },
+    { label: 'Objective', key: 'objective' },
     { label: 'Abstract', key: 'abstract' },
     { label: 'Methodology', key: 'methodology' },
     { label: 'Algorithms / Models', key: 'algorithms' },
-    { label: 'Dataset / Data', key: 'dataset' },
-    { label: 'Key Results', key: 'results' },
+    { label: 'Dataset', key: 'dataset' },
+    { label: 'Experimental Setup', key: 'experimental_setup' },
+    { label: 'Results / Major Findings', key: 'results' },
     { label: 'Limitations', key: 'limitations' },
     { label: 'Future Work', key: 'future_work' },
-    { label: 'Authors', key: 'authors' },
-    { label: 'Year', key: 'year' },
-    { label: 'Journal / Venue', key: 'journal' },
-    { label: 'References / Citation Information', key: 'references' },
+    { label: 'Keywords', key: 'keywords' },
   ] as const;
 
   return (
@@ -158,7 +151,7 @@ export const ComparePage: React.FC = () => {
                 <thead>
                   <tr className="bg-[#0f131a] border-b border-white/10">
                     <th className="p-5 w-56 text-xs font-bold uppercase tracking-wider text-[#7d8599] sticky left-0 bg-[#0f131a] z-10 border-r border-white/10">
-                      Feature
+                      Aspects
                     </th>
                     {selectedPapers.map((paper) => (
                       <th key={paper.id} className="p-5 text-sm font-bold text-[#f0f2f7] min-w-[260px] border-r border-white/10">
@@ -181,10 +174,24 @@ export const ComparePage: React.FC = () => {
                       </td>
                       {selectedPapers.map((paper) => {
                         const content = comparisonValue(paper, row.key);
+                        const sourceField = row.key === 'research_problem' ? paper.analysis?.problemStatement :
+                          row.key === 'objective' ? paper.analysis?.objectives :
+                          row.key === 'abstract' ? paper.analysis?.abstract :
+                          row.key === 'methodology' || row.key === 'experimental_setup' ? paper.analysis?.methodology :
+                          row.key === 'algorithms' ? paper.analysis?.algorithmsModels :
+                          row.key === 'dataset' ? paper.analysis?.datasets :
+                          row.key === 'results' ? paper.analysis?.majorFindings :
+                          row.key === 'limitations' ? paper.analysis?.limitations :
+                          row.key === 'future_work' ? paper.analysis?.futureWork : undefined;
 
                         return (
                           <td key={paper.id} className="p-5 text-sm text-[#b4b9c7] leading-relaxed border-r border-white/10 align-top hover:bg-white/5 transition-colors">
                             <p className="line-clamp-6">{content}</p>
+                            {sourceField?.sources.length ? (
+                              <p className="mt-3 text-[10px] text-[var(--text-muted)]">
+                                Source: {sourceField.sources.map((source) => `p.${source.page}, ${source.section}`).join(' · ')}
+                              </p>
+                            ) : null}
                           </td>
                         );
                       })}

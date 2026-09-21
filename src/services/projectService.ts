@@ -2,6 +2,21 @@ import type { ResearchProject } from '../types';
 import { buildApiUrl } from './apiClient';
 import { getSupabaseAuthToken } from './authToken';
 
+function mapProject(p: any): ResearchProject {
+  return {
+    id: p.id,
+    title: p.title,
+    topic: p.topic,
+    description: p.description,
+    tags: p.tags || [],
+    status: p.status || 'active',
+    progress: p.progress || 0,
+    paperCount: p.paper_count || 0,
+    gapCount: 0,
+    updatedAt: new Date(p.updated_at || p.created_at).toLocaleString(),
+  };
+}
+
 export const projectService = {
   async getProjects(): Promise<ResearchProject[]> {
     const token = await getSupabaseAuthToken();
@@ -15,28 +30,13 @@ export const projectService = {
       });
 
       if (!response.ok) {
-        console.error('Failed to fetch projects:', response.status);
-        return [];
+        throw new Error(`Failed to fetch projects: ${response.status}`);
       }
 
       const data = await response.json();
       // Convert backend response to frontend ResearchProject type
-      return (data.projects || []).map((p: any) => ({
-        id: p.id,
-        title: p.title,
-        topic: p.topic,
-        description: p.description,
-        tags: p.tags || [],
-        status: p.status || 'active',
-        progress: p.progress || 0,
-        paperCount: p.paper_count || 0,
-        gapCount: 0, // Backend doesn't track this yet
-        updatedAt: new Date(p.updated_at).toLocaleString(),
-      }));
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-      return [];
-    }
+      return (data.projects || []).map(mapProject);
+    } catch (error) { console.error('Error fetching projects:', error); throw error; }
   },
 
   async getProjectById(id: string): Promise<ResearchProject | null> {
@@ -55,22 +55,8 @@ export const projectService = {
       }
 
       const p = await response.json();
-      return {
-        id: p.id,
-        title: p.title,
-        topic: p.topic,
-        description: p.description,
-        tags: p.tags || [],
-        status: p.status || 'active',
-        progress: p.progress || 0,
-        paperCount: p.paper_count || 0,
-        gapCount: 0,
-        updatedAt: new Date(p.updated_at).toLocaleString(),
-      };
-    } catch (error) {
-      console.error('Error fetching project:', error);
-      return null;
-    }
+      return mapProject(p);
+    } catch (error) { console.error('Error fetching project:', error); throw error; }
   },
 
   async createProject(data: { title: string; topic: string; description: string }): Promise<ResearchProject | null> {
@@ -94,26 +80,12 @@ export const projectService = {
 
       if (!response.ok) {
         console.error('Failed to create project:', response.status);
-        return null;
+        throw new Error(`Failed to create project: ${response.status}`);
       }
 
       const p = await response.json();
-      return {
-        id: p.id,
-        title: p.title,
-        topic: p.topic,
-        description: p.description,
-        tags: p.tags || [],
-        status: p.status || 'active',
-        progress: p.progress || 0,
-        paperCount: p.paper_count || 0,
-        gapCount: 0,
-        updatedAt: new Date(p.created_at).toLocaleString(),
-      };
-    } catch (error) {
-      console.error('Error creating project:', error);
-      return null;
-    }
+      return mapProject(p);
+    } catch (error) { console.error('Error creating project:', error); throw error; }
   },
 
   async updateProject(id: string, updates: Partial<ResearchProject>): Promise<ResearchProject | null> {
@@ -138,26 +110,12 @@ export const projectService = {
       });
 
       if (!response.ok) {
-        return null;
+        throw new Error(`Failed to update project: ${response.status}`);
       }
 
       const p = await response.json();
-      return {
-        id: p.id,
-        title: p.title,
-        topic: p.topic,
-        description: p.description,
-        tags: p.tags || [],
-        status: p.status || 'active',
-        progress: p.progress || 0,
-        paperCount: p.paper_count || 0,
-        gapCount: 0,
-        updatedAt: new Date(p.updated_at).toLocaleString(),
-      };
-    } catch (error) {
-      console.error('Error updating project:', error);
-      return null;
-    }
+      return mapProject(p);
+    } catch (error) { console.error('Error updating project:', error); throw error; }
   },
 
   async deleteProject(id: string): Promise<boolean> {
@@ -172,10 +130,27 @@ export const projectService = {
         },
       });
 
-      return response.ok;
-    } catch (error) {
-      console.error('Error deleting project:', error);
-      return false;
-    }
+      if (!response.ok) throw new Error(`Failed to delete project: ${response.status}`);
+      return true;
+    } catch (error) { console.error('Error deleting project:', error); throw error; }
+  },
+
+  async addPaper(projectId: string, paperId: string): Promise<ResearchProject> {
+    const response = await fetch(buildApiUrl(`/projects/${projectId}/papers`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await getSupabaseAuthToken() || ''}` },
+      body: JSON.stringify({ paper_id: paperId })
+    });
+    if (!response.ok) throw new Error(`Failed to add paper: ${response.status}`);
+    return mapProject(await response.json());
+  },
+
+  async removePaper(projectId: string, paperId: string): Promise<ResearchProject> {
+    const response = await fetch(buildApiUrl(`/projects/${projectId}/papers/${encodeURIComponent(paperId)}`), {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${await getSupabaseAuthToken() || ''}` }
+    });
+    if (!response.ok) throw new Error(`Failed to remove paper: ${response.status}`);
+    return mapProject(await response.json());
   }
 };

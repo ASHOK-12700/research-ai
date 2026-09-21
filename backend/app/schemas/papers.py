@@ -1,6 +1,7 @@
 from typing import Literal
 
 from pydantic import BaseModel, Field
+from app.schemas.analysis import PaperAnalysis
 
 
 class PaperMetadata(BaseModel):
@@ -29,6 +30,8 @@ class PaperResponse(BaseModel):
     pages: int
     metadata: PaperMetadata
     sections: list[PaperSection]
+    full_text: str = ""
+    analysis: PaperAnalysis = Field(default_factory=PaperAnalysis)
     uploaded_at: str
     project_id: str | None = None
     file_size_bytes: int | None = None

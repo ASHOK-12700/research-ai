@@ -9,7 +9,7 @@ import requests
 from app.core.config import get_settings
 from app.schemas.summaries import StructuredPaperSummary
 
-MAX_TEXT_LENGTH = 12000
+MAX_TEXT_LENGTH = 120000
 DEFAULT_NVIDIA_MODEL = "meta/llama-3.2-3b-instruct"
 DEFAULT_NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 DEFAULT_NVIDIA_TIMEOUT_SECONDS = 180

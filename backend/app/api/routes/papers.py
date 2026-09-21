@@ -9,6 +9,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, s
 
 from app.core.config import get_settings
 from app.schemas.papers import PaperResponse, UploadResponse
+from app.services.paper_analysis_service import build_paper_analysis
 from app.schemas.summaries import StructuredPaperSummary
 from app.services.ai_summary_service import AISummaryServiceError, ai_summary_service
 from app.services.paper_repository import StoredPaper, build_paper_id, paper_repository
@@ -87,6 +88,8 @@ def _paper_to_response(paper: StoredPaper) -> PaperResponse:
         pages=paper.pages,
         metadata=paper.metadata,
         sections=paper.sections,
+        full_text=paper.full_text,
+        analysis=build_paper_analysis(paper.id, paper.metadata, paper.sections, paper.full_text),
         uploaded_at=paper.uploaded_at,
         project_id=paper.project_id,
         file_size_bytes=paper.file_size_bytes,

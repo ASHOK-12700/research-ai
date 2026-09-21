@@ -57,14 +57,14 @@ export const AppLayout: React.FC = () => {
         />
 
         {/* Main Content Body */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[rgba(11,13,20,0.32)] backdrop-blur-[1px]">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[rgba(11,17,23,0.42)] backdrop-blur-[2px]">
           <Header
             onOpenSearch={() => setSearchOpen(true)}
             onOpenUpload={() => setUploadOpen(true)}
             onOpenMobileMenu={() => setMobileMenuOpen(true)}
           />
 
-          <main className="scrollbar-thin scrollbar-thumb-[var(--border-default)] scrollbar-track-transparent flex-1 overflow-y-auto bg-[rgba(11,13,20,0.24)] p-4 sm:p-6 md:p-8">
+          <main className="scrollbar-thin scrollbar-thumb-[var(--border-default)] scrollbar-track-transparent flex-1 overflow-y-auto bg-[rgba(11,17,23,0.2)] p-4 sm:p-6 md:p-8">
               <Outlet context={{ onOpenUpload: () => setUploadOpen(true), onOpenEvidence: handleOpenEvidence, addToast, papersRefreshToken }} />
           </main>
         </div>

@@ -17,6 +17,10 @@ class ProjectUpdate(BaseModel):
     progress: int | None = None
 
 
+class ProjectPaperRequest(BaseModel):
+    paper_id: str = Field(..., min_length=1)
+
+
 class ProjectResponse(BaseModel):
     id: str
     user_id: str

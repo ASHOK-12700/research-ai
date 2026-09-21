@@ -17,7 +17,6 @@ import { SummaryPage } from './pages/SummaryPage';
 import { AskPapersPage } from './pages/AskPapersPage';
 import { ComparePage } from './pages/ComparePage';
 import { ResearchGapsPage } from './pages/ResearchGapsPage';
-import { CitationsPage } from './pages/CitationsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { FoldersPage } from './pages/FoldersPage';
 import { FolderDetailPage } from './pages/FolderDetailPage';
@@ -54,7 +53,6 @@ export const App: React.FC = () => {
             <Route path="/ask" element={<AskPapersPage />} />
             <Route path="/compare" element={<ComparePage />} />
             <Route path="/research-gaps" element={<ResearchGapsPage />} />
-            <Route path="/citations" element={<CitationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/help" element={<HelpPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

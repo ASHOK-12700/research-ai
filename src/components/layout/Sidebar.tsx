@@ -7,7 +7,6 @@ import {
   GitCompare,
   MessageSquareQuote,
   Lightbulb,
-  BookOpenCheck,
   Settings,
   HelpCircle,
   ChevronLeft,
@@ -37,7 +36,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     { label: 'Compare', icon: GitCompare, path: '/compare' },
     { label: 'Ask Papers', icon: MessageSquareQuote, path: '/ask' },
     { label: 'Research Gaps', icon: Lightbulb, path: '/research-gaps' },
-    { label: 'Citations', icon: BookOpenCheck, path: '/citations' }
   ];
 
   const handleLogout = async () => {
@@ -54,19 +52,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   return (
     <aside
       className={cn(
-        'dashboard-sidebar relative flex flex-col h-screen bg-[rgba(10,14,21,0.58)] border-r border-[var(--border-subtle)] transition-all duration-300 z-30 select-none shrink-0 shadow-lg backdrop-blur-xl',
+        'dashboard-sidebar relative flex flex-col h-screen bg-[rgba(10,21,28,0.82)] border-r border-[var(--border-subtle)] transition-all duration-300 z-30 select-none shrink-0 shadow-lg backdrop-blur-xl',
         collapsed ? 'w-20' : 'w-64'
       )}
     >
       {/* Brand Header - Premium */}
-      <div className="flex items-center justify-between p-4 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 backdrop-blur-sm">
+      <div className="flex items-center justify-between p-4 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/35 backdrop-blur-sm">
         <NavLink to="/dashboard" className="flex items-center gap-3 overflow-hidden group">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--accent-primary)] text-white shrink-0 shadow-md shadow-[var(--accent-primary)]/25 transition-all duration-300">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[var(--accent-primary)] text-white shrink-0 shadow-md shadow-[var(--accent-primary)]/25 transition-all duration-300">
             <Sparkles className="w-5 h-5" />
           </div>
           {!collapsed && (
             <div className="flex flex-col truncate">
-              <span className="font-bold text-lg text-[var(--text-primary)] tracking-tight font-heading flex items-center gap-1">
+              <span className="font-extrabold text-lg text-[var(--text-primary)] tracking-[-0.03em] font-heading flex items-center gap-1">
                 Research<span className="text-[var(--accent-primary)]">AI</span>
               </span>
               <span className="text-[10px] text-[var(--text-muted)] font-medium truncate">
@@ -87,7 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
 
       {/* Main Navigation */}
       <div className="flex-1 py-6 px-3 space-y-1 overflow-y-auto scrollbar-none">
-        <div className={cn('px-3 mb-3 text-[11px] font-semibold uppercase tracking-wider text-[#7d8599]', collapsed && 'text-center')}>
+        <div className={cn('px-3 mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]', collapsed && 'text-center')}>
           {collapsed ? '◆' : 'WORKSPACE'}
         </div>
         {navItems.map((item) => {
@@ -98,9 +96,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
               to={item.path}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                  'flex items-center gap-3 px-3 py-2.5 rounded-[0.65rem] text-sm font-semibold transition-all duration-200 group',
                   isActive
-                    ? 'bg-[var(--accent-primary)]/12 text-[var(--accent-primary)] border border-[var(--border-accent)] shadow-sm shadow-[var(--accent-primary)]/10'
+                    ? 'bg-[var(--accent-primary)]/14 text-[var(--accent-tertiary)] border border-[var(--border-accent)] shadow-sm shadow-[var(--accent-primary)]/10'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] border border-transparent'
                 )
               }
@@ -114,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       </div>
 
       {/* Bottom Section - Premium */}
-      <div className="p-3 border-t border-[var(--border-subtle)] space-y-2 bg-[var(--bg-surface)]/60">
+      <div className="p-3 border-t border-[var(--border-subtle)] space-y-2 bg-[var(--bg-surface)]/35">
         <NavLink
           to="/settings"
           className={({ isActive }) =>

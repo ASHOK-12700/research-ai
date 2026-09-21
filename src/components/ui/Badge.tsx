@@ -30,7 +30,7 @@ export const Badge: React.FC<BadgeProps> = ({
   return (
     <span
       className={cn(
-        'inline-flex items-center font-medium rounded-full border',
+        'inline-flex items-center font-semibold rounded-full border tracking-[0.01em]',
         variants[variant],
         sizes[size],
         className

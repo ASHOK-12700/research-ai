@@ -12,28 +12,28 @@ export const designSystem = {
   colors: {
     // Primary Background - Deep cinematic foundation
     background: {
-      primary: '#040609',    // Deep black base
-      secondary: '#0a0e15',  // Slightly lighter
-      tertiary: '#121820',   // Accent areas
-      surface: '#0f131a',    // Cards/surfaces
-      hover: '#15192a',      // Interactive hover
-      overlay: 'rgba(4, 6, 9, 0.8)',
+      primary: '#0b1117',
+      secondary: '#0f1921',
+      tertiary: '#16242d',
+      surface: '#111c24',
+      hover: '#1c303a',
+      overlay: 'rgba(11, 17, 23, 0.8)',
     },
 
     // Text - Premium typography
     text: {
-      primary: '#f0f2f7',    // Main text
-      secondary: '#b4b9c7',  // Supporting text
-      muted: '#7d8599',      // Tertiary/disabled
-      inverted: '#040609',   // For light backgrounds
+      primary: '#edf5f5',
+      secondary: '#a8bbc0',
+      muted: '#71878e',
+      inverted: '#0b1117',
     },
 
     // Accent - Controlled, sophisticated lighting
     accent: {
-      primary: '#6366f1',    // Indigo - primary accent
-      secondary: '#8b5cf6',  // Violet - secondary
-      tertiary: '#06b6d4',   // Cyan - highlights
-      warm: '#f59e0b',       // Amber - warnings/alerts
+      primary: '#4eb3b4',
+      secondary: '#6aaec4',
+      tertiary: '#8bd0c8',
+      warm: '#e0a65e',
       danger: '#ef4444',     // Red - errors
       success: '#10b981',    // Emerald - success
     },
@@ -65,8 +65,8 @@ export const designSystem = {
   // ============================================================================
   typography: {
     fontFamily: {
-      sans: "'Inter', system-ui, -apple-system, sans-serif",
-      heading: "'Outfit', 'Inter', sans-serif",
+      sans: "'DM Sans', system-ui, sans-serif",
+      heading: "'Manrope', 'DM Sans', sans-serif",
       mono: "'JetBrains Mono', monospace",
     },
 

@@ -29,6 +29,27 @@ type BackendPaper = {
   project_id?: string | null;
   file_size_bytes?: number | null;
   status: 'processed';
+  full_text?: string;
+  analysis?: {
+    abstract: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
+    problem_statement: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
+    objectives: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
+    methodology: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
+    datasets: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
+    algorithms_models: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
+    major_findings: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
+    limitations: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
+    future_work: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> };
+    keywords: string[];
+    research_gaps: Array<{
+      id: string;
+      title: string;
+      category: string;
+      description: string;
+      page?: number | null;
+      source_section?: string | null;
+    }>;
+  };
 };
 
 const backendHeaders = {
@@ -46,6 +67,11 @@ function mapBackendPaperToFrontendPaper(paper: BackendPaper): Paper {
   ];
 
   const abstractSection = paper.sections.find((section) => /^abstract$/i.test(section.title));
+  const analysis = paper.analysis;
+  const mapField = (field: { content: string; sources: Array<{ paper_id: string; page: number; section: string; snippet: string }> }) => ({
+    content: field.content,
+    sources: field.sources.map((source) => ({ paperId: source.paper_id, page: source.page, section: source.section, snippet: source.snippet }))
+  });
 
   return {
     id: paper.id,
@@ -59,7 +85,7 @@ function mapBackendPaperToFrontendPaper(paper: BackendPaper): Paper {
     summaryStatus: 'pending',
     similarityScore: 0,
     similarityReason: 'Uploaded and extracted locally by the backend.',
-    abstract: abstractSection?.content || '',
+    abstract: analysis?.abstract.content || abstractSection?.content || '',
     fileSize: paper.file_size_bytes ? `${(paper.file_size_bytes / (1024 * 1024)).toFixed(2)} MB` : undefined,
     uploadDate: paper.uploaded_at.split('T')[0],
     citationsCount: 0,
@@ -70,17 +96,42 @@ function mapBackendPaperToFrontendPaper(paper: BackendPaper): Paper {
       pageNumber: section.page_start,
       pageEnd: section.page_end
     })),
-    extractedSummary: {
-      abstract_overview: abstractSection?.content,
-      research_problem: paper.sections.find((section) => /problem|introduction|motivation/i.test(section.title))?.content,
-      objectives: paper.sections.find((section) => /objective|goal|aim/i.test(section.title))?.content,
-      methodology: paper.sections.find((section) => /method|approach|experiment|material/i.test(section.title))?.content,
-      dataset_data_used: paper.sections.find((section) => /dataset|data|corpus|benchmark/i.test(section.title))?.content,
-      proposed_approach_model: paper.sections.find((section) => /model|algorithm|architecture|approach/i.test(section.title))?.content,
-      key_results: paper.sections.find((section) => /result|finding|evaluation/i.test(section.title))?.content,
-      limitations: paper.sections.find((section) => /limitation|threat/i.test(section.title))?.content,
-      future_work: paper.sections.find((section) => /future|conclusion|discussion/i.test(section.title))?.content
-    }
+    extractedSummary: analysis ? {
+      abstract_overview: analysis.abstract.content,
+      research_problem: analysis.problem_statement.content,
+      objectives: analysis.objectives.content,
+      methodology: analysis.methodology.content,
+      dataset_data_used: analysis.datasets.content,
+      proposed_approach_model: analysis.algorithms_models.content,
+      key_results: analysis.major_findings.content,
+      limitations: analysis.limitations.content,
+      future_work: analysis.future_work.content,
+      problem_statement: analysis.problem_statement.content,
+      datasets: analysis.datasets.content,
+      algorithms_models: analysis.algorithms_models.content,
+      major_findings: analysis.major_findings.content,
+      keywords: analysis.keywords
+    } : undefined,
+    analysis: analysis ? {
+      abstract: mapField(analysis.abstract),
+      problemStatement: mapField(analysis.problem_statement),
+      objectives: mapField(analysis.objectives),
+      methodology: mapField(analysis.methodology),
+      datasets: mapField(analysis.datasets),
+      algorithmsModels: mapField(analysis.algorithms_models),
+      majorFindings: mapField(analysis.major_findings),
+      limitations: mapField(analysis.limitations),
+      futureWork: mapField(analysis.future_work),
+      keywords: analysis.keywords,
+      researchGaps: analysis.research_gaps.map((gap) => ({
+        id: gap.id,
+        title: gap.title,
+        category: gap.category,
+        description: gap.description,
+        page: gap.page,
+        sourceSection: gap.source_section
+      }))
+    } : undefined
   };
 }
 

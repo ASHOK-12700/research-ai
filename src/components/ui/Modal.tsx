@@ -52,7 +52,7 @@ export const Modal: React.FC<ModalProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-xl"
+            className="fixed inset-0 bg-[rgba(4,12,16,0.68)] backdrop-blur-md"
           />
 
           {/* Premium Modal Card */}
@@ -62,15 +62,10 @@ export const Modal: React.FC<ModalProps> = ({
             exit={{ opacity: 0, scale: 0.92, y: 20 }}
             transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
             className={cn(
-              'relative w-full bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] shadow-2xl shadow-[rgba(15,23,42,0.12)] overflow-hidden z-10 backdrop-blur-md',
+              'relative w-full bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] shadow-[var(--shadow-xl)] overflow-hidden z-10 backdrop-blur-md',
               maxWidths[maxWidth]
             )}
           >
-            {/* Subtle glow accent */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute -inset-1 bg-gradient-to-br from-indigo-600/20 to-transparent rounded-2xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            </div>
-
             {/* Header with premium styling */}
             <div className="relative z-10 flex items-start justify-between p-8 border-b border-[var(--border-subtle)]">
               <div className="flex-1">

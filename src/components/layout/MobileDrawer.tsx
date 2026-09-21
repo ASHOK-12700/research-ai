@@ -9,7 +9,6 @@ import {
   GitCompare,
   MessageSquareQuote,
   Lightbulb,
-  BookOpenCheck,
   Settings,
   Sparkles
 } from 'lucide-react';
@@ -28,7 +27,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
     { label: 'Compare', icon: GitCompare, path: '/compare' },
     { label: 'Ask Papers', icon: MessageSquareQuote, path: '/ask' },
     { label: 'Research Gaps', icon: Lightbulb, path: '/research-gaps' },
-    { label: 'Citations', icon: BookOpenCheck, path: '/citations' },
     { label: 'Settings', icon: Settings, path: '/settings' }
   ];
 
@@ -51,12 +49,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="relative w-72 max-w-[80vw] h-full bg-[#0e111a] border-r border-white/10 p-5 flex flex-col justify-between"
+            className="relative w-72 max-w-[80vw] h-full bg-[var(--bg-surface)] border-r border-[var(--border-default)] p-5 flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)] flex items-center justify-center text-white">
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <span className="font-bold text-lg text-white font-heading">ResearchAI</span>

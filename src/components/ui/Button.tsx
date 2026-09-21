@@ -18,13 +18,13 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/30 focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]';
+  const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-[0.65rem] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/30 focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] tracking-[-0.01em]';
 
   const variants = {
-    primary: 'bg-[var(--accent-primary)] hover:brightness-110 text-white border border-[var(--accent-primary)] shadow-sm shadow-[var(--accent-primary)]/25',
+    primary: 'bg-[var(--accent-primary)] hover:brightness-110 text-white border border-[var(--accent-primary)] shadow-sm shadow-[var(--accent-primary)]/20',
     secondary: 'bg-[var(--bg-elevated)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] border border-[var(--border-default)] shadow-sm',
     google: 'bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] border border-[var(--border-default)] shadow-sm',
-    outline: 'bg-transparent border border-[var(--border-default)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)]',
+    outline: 'bg-transparent border border-[var(--border-default)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)]',
     ghost: 'bg-transparent hover:bg-[var(--bg-hover)] text-[var(--text-primary)] border border-transparent',
     danger: 'bg-red-600 hover:bg-red-500 text-white border border-red-600 shadow-sm',
     success: 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-600 shadow-sm'

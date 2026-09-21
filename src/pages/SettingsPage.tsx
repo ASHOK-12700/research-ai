@@ -3,7 +3,6 @@ import {
   Settings,
   User,
   Sliders,
-  BookOpenCheck,
   Info,
   Check,
   Sparkles,
@@ -19,7 +18,7 @@ import { aiPreferencesService } from '../services/aiPreferencesService';
 
 export const SettingsPage: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'profile' | 'ai' | 'citations' | 'about'>('ai');
+  const [activeTab, setActiveTab] = useState<'profile' | 'ai' | 'about'>('ai');
   const [profile, setProfile] = useState<{ full_name?: string | null; email?: string | null; avatar_url?: string | null } | null>(null);
   const [fullName, setFullName] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
@@ -148,7 +147,7 @@ export const SettingsPage: React.FC = () => {
           Settings & Configuration
         </h1>
         <p className="text-sm text-zinc-400 mt-1">
-          Customize AI processing preferences, theme aesthetics, and default citation defaults.
+          Customize AI processing preferences and your ResearchAI profile.
         </p>
       </div>
 
@@ -159,7 +158,6 @@ export const SettingsPage: React.FC = () => {
           {[
             { id: 'ai', label: 'AI Preferences', icon: Sliders },
             { id: 'profile', label: 'User Profile', icon: User },
-            { id: 'citations', label: 'Citation Defaults', icon: BookOpenCheck },
             { id: 'about', label: 'About ResearchAI', icon: Info }
           ].map((item) => (
             <button
@@ -208,7 +206,7 @@ export const SettingsPage: React.FC = () => {
                   <select
                     value={aiModel}
                     onChange={(e) => setAiModel(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-900 border border-white/10 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500"
+                    className="research-select w-full px-3 py-2 text-sm"
                   >
                     <option value="meta/llama-3.2-3b-instruct">Llama 3.2 (3B)</option>
                     <option value="meta/llama-2-70b-chat">Llama 2 (70B)</option>
@@ -242,7 +240,7 @@ export const SettingsPage: React.FC = () => {
                   <select
                     value={reasoningDepth}
                     onChange={(e) => setReasoningDepth(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-zinc-900 border border-white/10 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500"
+                    className="research-select w-full px-3 py-2 text-sm"
                   >
                     <option value="Standard Analysis">Standard Analysis (Fast)</option>
                     <option value="Deep Analysis">Deep Analysis (Full Equations & Methods)</option>
@@ -295,22 +293,9 @@ export const SettingsPage: React.FC = () => {
                   <span className="text-[10px] font-mono text-indigo-400">{user?.id ? 'Supabase profile' : 'Not signed in'}</span>
                 </div>
               </div>
-              <label className="block text-xs text-zinc-400">Full name<input value={fullName} onChange={(event) => setFullName(event.target.value)} className="mt-1 w-full px-3 py-2 bg-zinc-900 border border-white/10 rounded-lg text-sm text-white" /></label>
+              <label className="block text-xs text-zinc-400">Full name<input value={fullName} onChange={(event) => setFullName(event.target.value)} className="research-input mt-1 w-full px-3 py-2 text-sm" /></label>
               <div className="flex flex-wrap gap-3"><Button onClick={saveProfile} disabled={profileSaving}>{profileSaving ? 'Saving...' : 'Save profile'}</Button><label className="inline-flex items-center px-4 py-2 rounded-lg border border-white/10 text-sm text-zinc-200 cursor-pointer">Upload image<input type="file" accept="image/*" className="hidden" onChange={uploadAvatar} /></label></div>
               {profileMessage && <p className="text-xs text-zinc-400">{profileMessage}</p>}
-            </Card>
-          )}
-
-          {activeTab === 'citations' && (
-            <Card className="space-y-4 p-6">
-              <h3 className="text-base font-bold text-zinc-100 font-heading">Default Citation Formatting</h3>
-              <p className="text-xs text-zinc-400">Choose your preferred default reference style when copying citations.</p>
-              <select className="w-full px-3 py-2 bg-zinc-900 border border-white/10 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-indigo-500">
-                <option value="APA">APA 7th Edition</option>
-                <option value="IEEE">IEEE Reference Standard</option>
-                <option value="MLA">MLA 9th Edition</option>
-                <option value="BibTeX">BibTeX Code</option>
-              </select>
             </Card>
           )}
 

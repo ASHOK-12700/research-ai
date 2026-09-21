@@ -4,6 +4,8 @@ from pathlib import Path
 
 from app.api.routes.papers import validate_pdf_upload
 from app.services.pdf_service import extract_pdf_document
+from app.services.paper_analysis_service import build_paper_analysis
+from app.schemas.papers import PaperMetadata, PaperSection
 
 
 def _build_valid_pdf_bytes() -> bytes:
@@ -63,3 +65,56 @@ REFERENCES
     assert result.sections[1].id == "section-2"
     assert result.sections[1].content == "This is the introduction."
     assert result.sections[-1].content == "[1] A reference."
+
+
+def test_extract_pdf_document_reads_all_pages_and_preserves_page_boundaries(tmp_path: Path):
+    doc = fitz.open()
+    first = doc.new_page()
+    first.insert_text((72, 72), "ABSTRACT\nA complete abstract on page one.")
+    second = doc.new_page()
+    second.insert_text((72, 72), "RESULTS\nThe result is reported on the final page.")
+    pdf_path = tmp_path / "multi-page.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    result = extract_pdf_document(pdf_path)
+
+    assert result.page_count == 2
+    assert "final page" in result.full_text
+    assert result.sections[-1].page_start == 2
+
+
+def test_paper_analysis_classifies_alternate_headings_and_keeps_gaps_scoped():
+    sections_a = [
+        PaperSection(id="a1", title="Motivation", content="The paper addresses a missing evaluation protocol.", page_start=1, page_end=1),
+        PaperSection(id="a2", title="Proposed Approach", content="The authors use a transformer encoder.", page_start=2, page_end=2),
+        PaperSection(id="a3", title="Data", content="The study uses the MIMIC dataset.", page_start=3, page_end=3),
+        PaperSection(id="a4", title="Evaluation", content="The method improves F1 score.", page_start=4, page_end=4),
+        PaperSection(id="a5", title="Threats to Validity", content="The sample is limited to one institution.", page_start=5, page_end=5),
+        PaperSection(id="a6", title="Future Directions", content="Future work should test additional institutions.", page_start=6, page_end=6),
+    ]
+    sections_b = [PaperSection(id="b1", title="Approach", content="A different approach is described.", page_start=1, page_end=1)]
+
+    analysis_a = build_paper_analysis("paper-a", PaperMetadata(keywords=["medical imaging"]), sections_a, "full text A")
+    analysis_b = build_paper_analysis("paper-b", PaperMetadata(), sections_b, "full text B")
+
+    assert analysis_a.problem_statement.content.startswith("The paper addresses")
+    assert analysis_a.methodology.content.startswith("The authors use")
+    assert analysis_a.datasets.content.startswith("The study uses")
+    assert analysis_a.algorithms_models.content.startswith("The authors use")
+    assert analysis_a.major_findings.content.startswith("The method improves")
+    assert analysis_a.major_findings.sources[0].paper_id == "paper-a"
+    assert analysis_a.major_findings.sources[0].page == 4
+    assert analysis_a.major_findings.sources[0].section == "Evaluation"
+    assert analysis_a.keywords == ["medical imaging"]
+    assert {gap.id for gap in analysis_a.research_gaps} == {"paper-a-gap-a5-limitation", "paper-a-gap-a6-direction"}
+    assert all("paper-b" not in gap.id for gap in analysis_a.research_gaps)
+    assert analysis_b.datasets.content == "Not available in this paper."
+    assert analysis_b.datasets.sources == []
+
+
+def test_paper_analysis_does_not_create_sources_without_matching_evidence():
+    analysis = build_paper_analysis("paper-empty", PaperMetadata(), [], "Only unstructured text without supported headings.")
+
+    assert analysis.methodology.content == "Not available in this paper."
+    assert analysis.methodology.sources == []

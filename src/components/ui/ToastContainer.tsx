@@ -25,12 +25,12 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onRemove
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="pointer-events-auto flex items-start gap-3 p-4 bg-[#181c2b] dark:bg-[#181c2b] light:bg-white border border-white/10 shadow-xl rounded-xl"
+            className="pointer-events-auto flex items-start gap-3 p-4 bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-[var(--shadow-lg)] rounded-xl"
           >
             {icons[toast.type]}
             <div className="flex-1">
-              <h4 className="text-sm font-semibold text-zinc-100">{toast.title}</h4>
-              {toast.message && <p className="text-xs text-zinc-400 mt-0.5">{toast.message}</p>}
+              <h4 className="text-sm font-semibold text-[var(--text-primary)]">{toast.title}</h4>
+              {toast.message && <p className="text-xs text-[var(--text-secondary)] mt-0.5">{toast.message}</p>}
             </div>
             <button
               onClick={() => onRemove(toast.id)}

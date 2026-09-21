@@ -115,7 +115,7 @@ export const PapersPage: React.FC = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by title, authors, journal..."
-              className="w-full pl-11 pr-4 py-2.5 bg-[#0f131a] border border-white/15 hover:border-white/20 focus:border-indigo-500/50 rounded-lg text-sm text-[#f0f2f7] placeholder-[#7d8599] focus:outline-none transition-all duration-200"
+              className="research-input w-full pl-11 pr-4 py-2.5 text-sm placeholder:text-[var(--text-muted)]"
             />
           </div>
 
@@ -127,7 +127,7 @@ export const PapersPage: React.FC = () => {
               <select
                 value={selectedTopic}
                 onChange={(e) => setSelectedTopic(e.target.value)}
-                className="bg-[#0f131a] border border-white/15 rounded-lg px-3 py-2 text-sm text-[#f0f2f7] focus:outline-none focus:border-indigo-500/50 transition-all"
+                className="research-select px-3 py-2 text-sm transition-all"
               >
                 <option value="all">All Topics</option>
                 <option value="CNN">CNN</option>
@@ -139,7 +139,7 @@ export const PapersPage: React.FC = () => {
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="bg-[#0f131a] border border-white/15 rounded-lg px-3 py-2 text-sm text-[#f0f2f7] focus:outline-none focus:border-indigo-500/50 transition-all"
+                className="research-select px-3 py-2 text-sm transition-all"
               >
                 <option value="all">All Years</option>
                 <option value="2025">2025</option>
