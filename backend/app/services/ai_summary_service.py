@@ -10,7 +10,6 @@ from app.core.config import get_settings
 from app.schemas.summaries import StructuredPaperSummary
 
 MAX_TEXT_LENGTH = 120000
-DEFAULT_NVIDIA_MODEL = "meta/llama-3.2-3b-instruct"
 DEFAULT_NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 DEFAULT_NVIDIA_TIMEOUT_SECONDS = 180
 
@@ -51,7 +50,7 @@ def extract_summary_payload(raw_response: str) -> dict[str, Any]:
 class AISummaryService:
     def __init__(self, model: str | None = None, base_url: str | None = None, api_key: str | None = None, timeout_seconds: int | None = None):
         settings = get_settings()
-        self.model = model if model is not None else (settings.AI_MODEL or DEFAULT_NVIDIA_MODEL)
+        self.model = model if model is not None else settings.AI_MODEL
         configured_base_url = base_url if base_url is not None else (settings.NVIDIA_BASE_URL or DEFAULT_NVIDIA_BASE_URL)
         self.base_url = configured_base_url.rstrip("/")
         self.api_key = api_key if api_key is not None else settings.NVIDIA_API_KEY

@@ -66,7 +66,7 @@ async def get_preferences(request: Request) -> AIPreferencesResponse:
             pref = response.data[0]
             return AIPreferencesResponse(
                 user_id=user_id,
-                model=pref.get("model", "meta/llama-3.2-3b-instruct"),
+                model=pref.get("model") or get_settings().AI_MODEL,
                 temperature=pref.get("temperature", 0.2),
                 reasoning_depth=pref.get("reasoning_depth", "Standard Analysis"),
                 saved_at=pref.get("updated_at", datetime.now(timezone.utc).isoformat()),
@@ -75,7 +75,7 @@ async def get_preferences(request: Request) -> AIPreferencesResponse:
         # Return defaults if no preferences saved yet
         return AIPreferencesResponse(
             user_id=user_id,
-            model="meta/llama-3.2-3b-instruct",
+            model=get_settings().AI_MODEL,
             temperature=0.2,
             reasoning_depth="Standard Analysis",
             saved_at=datetime.now(timezone.utc).isoformat(),

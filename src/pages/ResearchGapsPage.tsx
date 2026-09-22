@@ -67,10 +67,10 @@ export const ResearchGapsPage: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="px-2 py-0.5 text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded">
-                    {gap.category === 'direction' ? 'Future direction' : 'Limitation'}
+                    {gap.category === 'direction' ? 'Future direction' : gap.category === 'underexplored' ? 'Evidence review' : 'Limitation'}
                   </span>
                   <span className="text-xs font-mono text-indigo-400 font-bold">
-                    {gap.category === 'direction' ? 'Future direction' : 'Paper-specific gap'}
+                    {gap.category === 'direction' ? 'Future direction' : gap.category === 'underexplored' ? 'Paper-specific status' : 'Paper-specific gap'}
                   </span>
                 </div>
                 <h3 className="font-bold text-base text-zinc-100 leading-snug">{gap.title}</h3>
@@ -90,7 +90,7 @@ export const ResearchGapsPage: React.FC = () => {
                         paperId: sp.paperId,
                         paperTitle: sp.paperTitle,
                         page: sp.page,
-                        section: 'Limitations',
+                        section: gap.sourceSection || 'Research gaps',
                         snippet: sp.snippet
                       })
                     }

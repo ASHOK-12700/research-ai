@@ -63,13 +63,15 @@ def test_structured_summary_defaults_missing_values_to_not_specified():
 
 def test_ai_summary_service_uses_nvidia_model_and_base_url():
     service = AISummaryService()
+    settings = __import__('app.core.config', fromlist=['get_settings']).get_settings()
 
-    assert service.model == "meta/llama-3.2-3b-instruct"
+    assert service.model == settings.AI_MODEL
     assert service.base_url == "https://integrate.api.nvidia.com/v1"
 
 
 def test_summarize_paper_checks_nvidia_model_registry_and_completes(monkeypatch):
     service = AISummaryService(api_key="test-key")
+    model = service.model
 
     class DummyResponse:
         def __init__(self, status_code=200, payload=None, text=""):
@@ -83,7 +85,7 @@ def test_summarize_paper_checks_nvidia_model_registry_and_completes(monkeypatch)
     def fake_get(url, headers=None, timeout=None):
         assert url == "https://integrate.api.nvidia.com/v1/models"
         assert headers == {"Authorization": "Bearer test-key"}
-        return DummyResponse(payload={"data": [{"id": "meta/llama-3.2-3b-instruct"}]})
+        return DummyResponse(payload={"data": [{"id": model}]})
 
     def fake_post(url, headers=None, json=None, timeout=None):
         assert url == "https://integrate.api.nvidia.com/v1/chat/completions"
@@ -91,7 +93,7 @@ def test_summarize_paper_checks_nvidia_model_registry_and_completes(monkeypatch)
             "Content-Type": "application/json",
             "Authorization": "Bearer test-key",
         }
-        assert json["model"] == "meta/llama-3.2-3b-instruct"
+        assert json["model"] == model
         payload = {
             "choices": [{
                 "message": {
@@ -113,6 +115,7 @@ def test_summarize_paper_checks_nvidia_model_registry_and_completes(monkeypatch)
 
 def test_summarize_paper_reports_missing_nvidia_model(monkeypatch):
     service = AISummaryService(api_key="test-key")
+    model = service.model
 
     class DummyResponse:
         def __init__(self, status_code=200, payload=None, text=""):
@@ -130,7 +133,7 @@ def test_summarize_paper_reports_missing_nvidia_model(monkeypatch):
 
     monkeypatch.setattr("requests.get", fake_get)
 
-    with pytest.raises(AISummaryServiceError, match="meta/llama-3.2-3b-instruct"):
+    with pytest.raises(AISummaryServiceError, match=model.replace('/', r'\/')):
         service.summarize_paper("Test Paper", ["A. Author"], "Valid paper text.")
 
 

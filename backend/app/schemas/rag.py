@@ -61,7 +61,7 @@ class ChatResponse(BaseModel):
 class AIPreferences(BaseModel):
     """User's AI preferences."""
     user_id: str
-    model: str = "meta/llama-3.2-3b-instruct"
+    model: str
     temperature: float = Field(default=0.2, ge=0.0, le=1.0)
     reasoning_depth: str = Field(
         default="Standard Analysis",

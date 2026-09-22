@@ -25,7 +25,7 @@ export const SettingsPage: React.FC = () => {
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
 
   // AI Preferences
-  const [aiModel, setAiModel] = useState('meta/llama-3.2-3b-instruct');
+  const [aiModel, setAiModel] = useState('z-ai/glm-5-3');
   const [temperature, setTemperature] = useState(0.2);
   const [reasoningDepth, setReasoningDepth] = useState<'Standard Analysis' | 'Deep Analysis' | 'Exhaustive'>('Standard Analysis');
   const [saved, setSaved] = useState(false);
@@ -68,7 +68,7 @@ export const SettingsPage: React.FC = () => {
         // Fall back to local storage if backend fails
         const localPrefs = aiPreferencesService.getLocalPreferences();
         if (localPrefs) {
-          setAiModel(localPrefs.model || 'meta/llama-3.2-3b-instruct');
+          setAiModel(localPrefs.model || 'z-ai/glm-5-3');
           setTemperature(localPrefs.temperature || 0.2);
           setReasoningDepth((localPrefs.reasoning_depth as any) || 'Standard Analysis');
         }
@@ -208,7 +208,7 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setAiModel(e.target.value)}
                     className="research-select w-full px-3 py-2 text-sm"
                   >
-                    <option value="meta/llama-3.2-3b-instruct">Llama 3.2 (3B)</option>
+                    <option value="z-ai/glm-5-3">GLM 5.3</option>
                     <option value="meta/llama-2-70b-chat">Llama 2 (70B)</option>
                   </select>
                   <p className="text-[10px] text-zinc-500 mt-1">Selected model will be used for Ask Your Papers and general queries.</p>

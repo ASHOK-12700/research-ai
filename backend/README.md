@@ -66,14 +66,14 @@ Required environment variable:
 
 Optional environment variables:
 
-- `AI_MODEL` (default: `meta/llama-3.2-3b-instruct`)
+- `AI_MODEL` (set this to the NVIDIA model configured in `backend/.env`)
 - `NVIDIA_BASE_URL` (default: `https://integrate.api.nvidia.com/v1`)
 
 Add them to a local `.env` file in the `backend` folder, for example:
 
 ```env
 NVIDIA_API_KEY=your_key_here
-AI_MODEL=meta/llama-3.2-3b-instruct
+AI_MODEL=your_nvidia_model
 NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
 ```
 

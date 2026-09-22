@@ -36,9 +36,9 @@ class SimpleRAGService:
         timeout_seconds: int | None = None,
     ):
         settings = get_settings()
-        self.model = model or settings.CHATBOT_MODEL or settings.AI_MODEL or "meta/llama-3.2-3b-instruct"
-        self.base_url = (base_url or settings.CHATBOT_BASE_URL or settings.NVIDIA_BASE_URL or "https://integrate.api.nvidia.com/v1").rstrip("/")
-        self.api_key = api_key or settings.CHATBOT_API_KEY or settings.NVIDIA_API_KEY
+        self.model = model or settings.AI_MODEL
+        self.base_url = (base_url or settings.NVIDIA_BASE_URL).rstrip("/")
+        self.api_key = api_key or settings.NVIDIA_API_KEY
         self.timeout_seconds = timeout_seconds or 180
 
     def _retrieve_relevant_sections(

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = Field(default="development")
     
     # AI/RAG Configuration
-    AI_MODEL: str = Field(default="meta/llama-3.2-3b-instruct")
+    AI_MODEL: str = Field(default="")
     NVIDIA_API_KEY: str | None = Field(default=None)
     NVIDIA_BASE_URL: str = Field(default="https://integrate.api.nvidia.com/v1")
     

@@ -171,3 +171,45 @@ def test_paper_analysis_extracts_experimental_setup_from_alt_headings_and_keeps_
     assert "improves completion accuracy" in analysis.major_findings.content
     assert "Future work" in analysis.future_work.content
     assert analysis.experimental_setup.sources[0].paper_id == "exp-paper"
+
+
+def test_paper_analysis_creates_paper_specific_gaps_from_prose_evidence():
+    sections = [
+        PaperSection(
+            id="discussion",
+            title="DISCUSSION",
+            content="The evaluation is limited to one benchmark. Future work should test additional datasets.",
+            page_start=7,
+            page_end=7,
+        )
+    ]
+
+    analysis = build_paper_analysis("prose-paper", PaperMetadata(), sections, "full text")
+
+    assert {gap.category for gap in analysis.research_gaps} == {"limitation", "direction"}
+    assert all(gap.source_section == "DISCUSSION" for gap in analysis.research_gaps)
+    assert all(gap.description for gap in analysis.research_gaps)
+
+
+def test_extract_pdf_document_detects_abstract_with_dash_heading_and_stops_at_next_section(tmp_path: Path):
+    doc = fitz.open()
+    page = doc.new_page()
+    page.insert_textbox((50, 50, 550, 750), """ABSTRACT—
+We introduce a SKILL code autocompletion approach and evaluate it on a custom dataset.
+
+INTRODUCTION
+This introduction explains the motivation for faster code completion tooling.
+
+METHODS
+We compare several models and training strategies.
+""")
+    pdf_path = tmp_path / "abstract_dash.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    result = extract_pdf_document(pdf_path)
+
+    assert [section.title for section in result.sections[:3]] == ["ABSTRACT", "INTRODUCTION", "METHODS"]
+    assert "custom dataset" in result.sections[0].content.lower()
+    assert "motivation for faster code completion" in result.sections[1].content.lower()
+    assert "compare several models" in result.sections[2].content.lower()

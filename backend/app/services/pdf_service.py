@@ -20,11 +20,19 @@ SECTION_HEADINGS = {
     "review process",
 }
 
-NUMBER_PREFIX = r"(?:\s*(?:[IVXLCDM]+|\d+(?:\.\d+)*)(?:\s*[.)-])?\s*)?"
+NUMBER_PREFIX = r"(?:\d+(?:\.\d+)*|[IVXLCDM]+)"
 HEADING_PATTERN = re.compile(
-    rf"^\s*{NUMBER_PREFIX}(?P<title>[A-Za-z][A-Za-z0-9 &'()/,-]{{1,100}})\s*[:.]?\s*$",
+    r"^\s*(?P<title>[A-Za-z][A-Za-z0-9 &'()/,-]{1,100})\s*(?:[:.\-–—?])?\s*$",
     re.IGNORECASE,
 )
+
+
+def _strip_number_prefix(line: str) -> str:
+    stripped = line.strip()
+    match = re.match(rf"^\s*(?:(?:{NUMBER_PREFIX})(?:[.)-]\s*|\s+))?", stripped)
+    if not match:
+        return stripped
+    return stripped[match.end():].strip()
 
 
 @dataclass(slots=True)
@@ -101,11 +109,13 @@ def _build_metadata(doc: fitz.Document) -> PaperMetadata:
 def _is_heading(line: str) -> re.Match[str] | None:
     if len(line) > 120:
         return None
-    match = HEADING_PATTERN.match(line)
+
+    candidate = _strip_number_prefix(line)
+    match = HEADING_PATTERN.match(candidate)
     if not match:
         return None
 
-    title = re.sub(r"\s+", " ", match.group("title")).strip(" .:")
+    title = re.sub(r"\s+", " ", match.group("title")).strip(" .:;!?–—-")
     if title.casefold() in SECTION_HEADINGS:
         return match
 
@@ -117,7 +127,7 @@ def _is_heading(line: str) -> re.Match[str] | None:
         and not re.search(r"[.!?]", title)
         and title == title.title()
     )
-    return match if looks_like_heading else None
+    return match if looks_like_heading or title.casefold() in SECTION_HEADINGS else None
 
 
 def _finalize_section(

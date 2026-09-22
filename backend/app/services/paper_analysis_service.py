@@ -165,6 +165,32 @@ def build_paper_analysis(
         if gap and not any(existing.description == gap.description for existing in gaps):
             gaps.append(gap)
 
+    evidence_gap_markers = (
+        (tuple(marker for marker in _CONTENT_MARKERS["limitations"] if marker not in ("future work", "future direction")) + ("limited",), "limitation", "Research limitation"),
+        (_CONTENT_MARKERS["future_work"], "direction", "Future research direction"),
+    )
+    for markers, category, title in evidence_gap_markers:
+        marker_list = tuple(marker.casefold() for marker in markers)
+        for section in normalized_sections:
+            paragraphs = [part.strip() for part in re.split(r"\n\s*\n", section.content) if part.strip()]
+            for paragraph in paragraphs:
+                if not any(marker in paragraph.casefold() for marker in marker_list):
+                    continue
+                description = _clean(paragraph)
+                if not description or any(
+                    existing.description == description and existing.category == category
+                    for existing in gaps
+                ):
+                    continue
+                gaps.append(PaperGap(
+                    id=f"{paper_id}-gap-{section.id or section.page_start}-{category}-{len(gaps)}",
+                    title=title,
+                    category=category,
+                    description=description,
+                    page=section.page_start,
+                    source_section=section.title,
+                ))
+
     return PaperAnalysis(
         abstract=_abstract(paper_id, normalized_sections),
         problem_statement=fields["problem_statement"],
