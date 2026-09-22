@@ -251,21 +251,6 @@ export const PaperDetailPage: React.FC = () => {
                   <span className="text-[10px] text-zinc-500 font-mono">analysis</span>
                 </button>
               ))}
-              <div className="my-3 border-t border-white/10" />
-              {paper.sections?.map((sec) => (
-                <button
-                  key={sec.id}
-                  onClick={() => setActiveSection(sec.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer ${
-                    activeSection === sec.id
-                      ? 'bg-indigo-600/20 text-indigo-300 font-bold border-l-2 border-indigo-500'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
-                  }`}
-                >
-                  <span className="truncate">{sec.title}</span>
-                  <span className="text-[10px] text-zinc-500 font-mono">p.{sec.pageNumber}</span>
-                </button>
-              ))}
             </div>
           </Card>
         </div>
