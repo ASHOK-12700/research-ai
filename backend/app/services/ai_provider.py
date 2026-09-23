@@ -78,6 +78,8 @@ def complete_with_fallback(
     failures: list[str] = []
     for provider in providers:
         provider_payload = {**payload, "model": provider.model}
+        if provider.name == "Groq":
+            provider_payload.pop("chat_template_kwargs", None)
         try:
             response = requests.post(
                 f"{provider.base_url}/chat/completions",

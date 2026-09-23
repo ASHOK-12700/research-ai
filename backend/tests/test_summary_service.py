@@ -61,17 +61,18 @@ def test_structured_summary_defaults_missing_values_to_not_specified():
     assert summary.future_work == "Not specified"
 
 
-def test_ai_summary_service_uses_nvidia_model_and_base_url():
+def test_ai_summary_service_uses_primary_provider_model():
     service = AISummaryService()
     settings = __import__('app.core.config', fromlist=['get_settings']).get_settings()
 
-    assert service.model == settings.AI_MODEL
-    assert service.base_url == "https://integrate.api.nvidia.com/v1"
+    assert service.model == settings.GROQ_MODEL
+    assert service.base_url == ""
 
 
-def test_summarize_paper_checks_nvidia_model_registry_and_completes(monkeypatch):
-    service = AISummaryService(api_key="test-key")
-    model = service.model
+def test_summarize_paper_uses_primary_provider_and_completes(monkeypatch):
+    service = AISummaryService()
+    settings = __import__('app.core.config', fromlist=['get_settings']).get_settings()
+    model = settings.GROQ_MODEL
 
     class DummyResponse:
         def __init__(self, status_code=200, payload=None, text=""):
@@ -82,16 +83,16 @@ def test_summarize_paper_checks_nvidia_model_registry_and_completes(monkeypatch)
         def json(self):
             return self._payload
 
-    def fake_get(url, headers=None, timeout=None):
-        assert url == "https://integrate.api.nvidia.com/v1/models"
-        assert headers == {"Authorization": "Bearer test-key"}
-        return DummyResponse(payload={"data": [{"id": model}]})
+        def iter_lines(self, decode_unicode=True):
+            content = self._payload["choices"][0]["message"]["content"]
+            yield f'data: {json.dumps({"choices": [{"delta": {"content": content}}]})}'
+            yield "data: [DONE]"
 
-    def fake_post(url, headers=None, json=None, timeout=None):
-        assert url == "https://integrate.api.nvidia.com/v1/chat/completions"
+    def fake_post(url, headers=None, json=None, timeout=None, stream=None):
+        assert url == "https://api.groq.com/openai/v1/chat/completions"
         assert headers == {
             "Content-Type": "application/json",
-            "Authorization": "Bearer test-key",
+            "Authorization": f"Bearer {settings.GROQ_API_KEY}",
         }
         assert json["model"] == model
         payload = {
@@ -103,7 +104,6 @@ def test_summarize_paper_checks_nvidia_model_registry_and_completes(monkeypatch)
         }
         return DummyResponse(payload=payload)
 
-    monkeypatch.setattr("requests.get", fake_get)
     monkeypatch.setattr("requests.post", fake_post)
 
     summary = service.summarize_paper("Test Paper", ["A. Author"], "Long paper text..." * 5)
@@ -113,9 +113,28 @@ def test_summarize_paper_checks_nvidia_model_registry_and_completes(monkeypatch)
     assert summary.key_takeaways == "Takeaways"
 
 
-def test_summarize_paper_reports_missing_nvidia_model(monkeypatch):
-    service = AISummaryService(api_key="test-key")
-    model = service.model
+def test_summarize_paper_requires_configured_provider(monkeypatch):
+    monkeypatch.setattr(
+        "app.core.config.get_settings",
+        lambda: Settings(
+            GROQ_MODEL="",
+            OPENROUTER_MODEL="",
+            MISTRAL_MODEL="",
+            SUPABASE_URL="https://example.supabase.co",
+            SUPABASE_ANON_KEY="public-anon-key",
+            SUPABASE_SERVICE_ROLE_KEY="service-role-key",
+        ),
+    )
+    service = AISummaryService()
+
+    with pytest.raises(AISummaryServiceError, match="No AI provider"):
+        service.summarize_paper("Test Paper", ["A. Author"], "Valid paper text.")
+
+
+def test_summarize_paper_falls_back_after_provider_auth_failure(monkeypatch):
+    service = AISummaryService()
+    settings = __import__('app.core.config', fromlist=['get_settings']).get_settings()
+    calls = []
 
     class DummyResponse:
         def __init__(self, status_code=200, payload=None, text=""):
@@ -126,43 +145,34 @@ def test_summarize_paper_reports_missing_nvidia_model(monkeypatch):
         def json(self):
             return self._payload
 
-    def fake_get(url, headers=None, timeout=None):
-        assert url == "https://integrate.api.nvidia.com/v1/models"
-        assert headers == {"Authorization": "Bearer test-key"}
-        return DummyResponse(payload={"data": [{"id": "other-model"}]})
+        def iter_lines(self, decode_unicode=True):
+            content = self._payload["choices"][0]["message"]["content"]
+            yield f'data: {json.dumps({"choices": [{"delta": {"content": content}}]})}'
+            yield "data: [DONE]"
 
-    monkeypatch.setattr("requests.get", fake_get)
+    def fake_post(url, headers=None, json=None, timeout=None, stream=None):
+        calls.append(url)
+        if "groq.com" in url:
+            return DummyResponse(status_code=401, payload={"error": {"message": "Unauthorized"}})
+        return DummyResponse(
+            payload={
+                "choices": [{
+                    "message": {
+                        "content": "```json\n{\n  \"paper_title\": \"Test Paper\",\n  \"authors\": [\"A. Author\"],\n  \"abstract_overview\": \"Summary\",\n  \"research_problem\": \"Problem\",\n  \"objectives\": \"Objectives\",\n  \"methodology\": \"Methods\",\n  \"dataset_data_used\": \"Dataset\",\n  \"proposed_approach_model\": \"Approach\",\n  \"key_results\": \"Results\",\n  \"evaluation_metrics\": \"Accuracy\",\n  \"main_contributions\": \"Contribution\",\n  \"limitations\": \"Not specified\",\n  \"future_work\": \"Not specified\",\n  \"key_takeaways\": \"Takeaways\"\n}\n```"
+                    }
+                }]
+            }
+        )
 
-    with pytest.raises(AISummaryServiceError, match=model.replace('/', r'\/')):
-        service.summarize_paper("Test Paper", ["A. Author"], "Valid paper text.")
+    monkeypatch.setattr("requests.post", fake_post)
 
+    summary = service.summarize_paper("Test Paper", ["A. Author"], "Valid paper text.")
 
-def test_summarize_paper_requires_nvidia_api_key():
-    service = AISummaryService(api_key="")
-
-    with pytest.raises(AISummaryServiceError, match="Missing NVIDIA_API_KEY"):
-        service.summarize_paper("Test Paper", ["A. Author"], "Valid paper text.")
-
-
-def test_summarize_paper_handles_nvidia_auth_failure(monkeypatch):
-    service = AISummaryService(api_key="bad-key")
-
-    class DummyResponse:
-        def __init__(self, status_code=200, payload=None, text=""):
-            self.status_code = status_code
-            self._payload = payload or {}
-            self.text = text
-
-        def json(self):
-            return self._payload
-
-    def fake_get(url, headers=None, timeout=None):
-        return DummyResponse(status_code=401, payload={"error": {"message": "Unauthorized"}})
-
-    monkeypatch.setattr("requests.get", fake_get)
-
-    with pytest.raises(AISummaryServiceError, match="authentication failed"):
-        service.summarize_paper("Test Paper", ["A. Author"], "Valid paper text.")
+    assert summary.paper_title == "Test Paper"
+    assert calls == [
+        "https://api.groq.com/openai/v1/chat/completions",
+        "https://openrouter.ai/api/v1/chat/completions",
+    ]
 
 
 def test_settings_include_supabase_variables():
