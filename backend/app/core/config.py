@@ -14,15 +14,13 @@ class Settings(BaseSettings):
     )
     ENVIRONMENT: str = Field(default="development")
     
-    # AI/RAG Configuration
-    AI_MODEL: str = Field(default="")
-    NVIDIA_API_KEY: str | None = Field(default=None)
-    NVIDIA_BASE_URL: str = Field(default="https://integrate.api.nvidia.com/v1")
-    
-    # Chatbot Configuration (separate from RAG)
-    CHATBOT_MODEL: str | None = Field(default=None)
-    CHATBOT_API_KEY: str | None = Field(default=None)
-    CHATBOT_BASE_URL: str | None = Field(default=None)
+    # AI provider configuration, tried in priority order.
+    GROQ_API_KEY: str | None = Field(default=None)
+    GROQ_MODEL: str = Field(default="")
+    OPENROUTER_API_KEY: str | None = Field(default=None)
+    OPENROUTER_MODEL: str = Field(default="")
+    MISTRAL_API_KEY: str | None = Field(default=None)
+    MISTRAL_MODEL: str = Field(default="")
     
     # Supabase Configuration
     SUPABASE_URL: str = Field(default="")
@@ -47,6 +45,10 @@ class Settings(BaseSettings):
             "https://researchai-app.vercel.app",
             *configured_origins,
         ]))
+
+    @property
+    def AI_MODEL(self) -> str:
+        return self.GROQ_MODEL
 
 
 @lru_cache(maxsize=1)

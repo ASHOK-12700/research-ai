@@ -8,10 +8,10 @@ import requests
 
 from app.core.config import get_settings
 from app.schemas.summaries import StructuredPaperSummary
+from app.services.ai_provider import ProviderCompletionError, complete_with_fallback, configured_providers
 
 MAX_TEXT_LENGTH = 120000
-DEFAULT_NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
-DEFAULT_NVIDIA_TIMEOUT_SECONDS = 180
+DEFAULT_PROVIDER_TIMEOUT_SECONDS = 180
 
 
 class AISummaryServiceError(RuntimeError):
@@ -20,6 +20,24 @@ class AISummaryServiceError(RuntimeError):
         self.user_message = user_message
         self.internal_message = internal_message
         self.status_code = status_code
+
+
+def _streamed_content(response: requests.Response) -> str:
+    content = []
+    for line in response.iter_lines(decode_unicode=True):
+        if not line or not line.startswith("data:"):
+            continue
+        data = line[5:].strip()
+        if data == "[DONE]":
+            break
+        try:
+            chunk = json.loads(data)
+        except json.JSONDecodeError:
+            continue
+        delta = ((chunk.get("choices") or [{}])[0].get("delta") or {}).get("content")
+        if isinstance(delta, str):
+            content.append(delta)
+    return "".join(content)
 
 
 def _prepare_summary_text(full_text: str, max_chars: int = MAX_TEXT_LENGTH) -> str:
@@ -50,14 +68,13 @@ def extract_summary_payload(raw_response: str) -> dict[str, Any]:
 class AISummaryService:
     def __init__(self, model: str | None = None, base_url: str | None = None, api_key: str | None = None, timeout_seconds: int | None = None):
         settings = get_settings()
-        self.model = model if model is not None else settings.AI_MODEL
-        configured_base_url = base_url if base_url is not None else (settings.NVIDIA_BASE_URL or DEFAULT_NVIDIA_BASE_URL)
-        self.base_url = configured_base_url.rstrip("/")
-        self.api_key = api_key if api_key is not None else settings.NVIDIA_API_KEY
-        self.timeout_seconds = timeout_seconds if timeout_seconds is not None else DEFAULT_NVIDIA_TIMEOUT_SECONDS
+        self.model = model if model is not None else settings.GROQ_MODEL
+        self.base_url = (base_url or "").rstrip("/")
+        self.api_key = api_key
+        self.timeout_seconds = timeout_seconds if timeout_seconds is not None else DEFAULT_PROVIDER_TIMEOUT_SECONDS
 
     def is_configured(self) -> bool:
-        return bool(self.model) and bool(self.base_url)
+        return bool(configured_providers(get_settings()))
 
     def _extract_error_detail(self, response: requests.Response) -> str:
         try:
@@ -77,94 +94,6 @@ class AISummaryService:
         if text:
             return text[:600]
         return f"HTTP {response.status_code}"
-
-    def verify_model_available(self) -> str:
-        if not self.api_key:
-            raise AISummaryServiceError(
-                user_message="AI summary is unavailable because backend configuration is incomplete.",
-                internal_message="Missing NVIDIA_API_KEY in backend environment.",
-                status_code=500,
-            )
-
-        model_check_url = f"{self.base_url}/models"
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-        try:
-            response = requests.get(model_check_url, headers=headers, timeout=self.timeout_seconds)
-        except requests.Timeout as exc:
-            raise AISummaryServiceError(
-                user_message="The AI service timed out while checking model availability. Please try again.",
-                internal_message=f"NVIDIA model registry request timed out at {model_check_url}: {exc}",
-                status_code=504,
-            ) from exc
-        except requests.RequestException as exc:
-            raise AISummaryServiceError(
-                user_message="The AI service is currently unavailable. Please try again later.",
-                internal_message=f"Unable to reach NVIDIA model registry at {model_check_url}: {exc}",
-                status_code=503,
-            ) from exc
-
-        if response.status_code == 401:
-            raise AISummaryServiceError(
-                user_message="AI summary is unavailable due to an authentication issue.",
-                internal_message="NVIDIA authentication failed while listing models (401).",
-                status_code=502,
-            )
-
-        if response.status_code == 429:
-            raise AISummaryServiceError(
-                user_message="AI summary is temporarily rate limited. Please retry shortly.",
-                internal_message="NVIDIA rate limit hit while listing models (429).",
-                status_code=503,
-            )
-
-        if response.status_code >= 500:
-            raise AISummaryServiceError(
-                user_message="The AI service is currently unavailable. Please try again later.",
-                internal_message=f"NVIDIA model registry unavailable ({response.status_code}).",
-                status_code=503,
-            )
-
-        if response.status_code >= 400:
-            detail = self._extract_error_detail(response)
-            raise AISummaryServiceError(
-                user_message="Unable to validate the configured AI model.",
-                internal_message=f"NVIDIA model registry request failed ({response.status_code}): {detail}",
-                status_code=502,
-            )
-
-        try:
-            body = response.json()
-        except ValueError as exc:
-            raise AISummaryServiceError(
-                user_message="The AI service returned an unexpected response.",
-                internal_message=f"NVIDIA model registry returned invalid JSON: {response.text[:300]}",
-                status_code=502,
-            ) from exc
-
-        available_models = [
-            str(item.get("id"))
-            for item in (body.get("data") or [])
-            if isinstance(item, dict) and item.get("id")
-        ]
-
-        if not available_models:
-            raise AISummaryServiceError(
-                user_message="No AI model is currently available for summarization.",
-                internal_message="NVIDIA model registry returned no models.",
-                status_code=503,
-            )
-
-        if self.model not in available_models:
-            raise AISummaryServiceError(
-                user_message="The configured AI model is invalid or unavailable.",
-                internal_message=(
-                    f"Configured model '{self.model}' is unavailable in NVIDIA NIM. "
-                    f"Available models: {', '.join(available_models)}"
-                ),
-                status_code=502,
-            )
-
-        return self.model
 
     def build_prompt(self, paper_title: str, authors: list[str], text: str) -> str:
         author_text = ", ".join(authors) if authors else "Not specified"
@@ -216,95 +145,28 @@ Extracted paper text:
                 status_code=422,
             )
 
-        self.verify_model_available()
-
         prompt = self.build_prompt(paper_title, authors, text)
         payload = {
-            "model": self.model,
             "messages": [
                 {"role": "system", "content": "You produce structured JSON summaries for research papers based strictly on the provided text."},
                 {"role": "user", "content": prompt},
             ],
             "temperature": 0.2,
             "max_tokens": 700,
+            "stream": True,
+            "reasoning_effort": "low",
+            "chat_template_kwargs": {"clear_thinking": True},
         }
 
-        headers = {"Content-Type": "application/json"}
-        headers["Authorization"] = f"Bearer {self.api_key}"
-
         try:
-            response = requests.post(
-                f"{self.base_url}/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=self.timeout_seconds,
-            )
-        except requests.Timeout as exc:
-            raise AISummaryServiceError(
-                user_message="The AI service timed out while generating the summary. Please retry.",
-                internal_message=f"NVIDIA chat completion timed out: {exc}",
-                status_code=504,
-            ) from exc
-        except requests.RequestException as exc:
+            result = complete_with_fallback(payload, timeout_seconds=self.timeout_seconds)
+        except ProviderCompletionError as exc:
             raise AISummaryServiceError(
                 user_message="The AI service is currently unavailable. Please try again later.",
-                internal_message=f"NVIDIA chat completion request failed: {exc}",
+                internal_message=str(exc),
                 status_code=503,
             ) from exc
-
-        if response.status_code == 401:
-            raise AISummaryServiceError(
-                user_message="AI summary is unavailable due to an authentication issue.",
-                internal_message="NVIDIA authentication failed during chat completion (401).",
-                status_code=502,
-            )
-
-        if response.status_code == 429:
-            raise AISummaryServiceError(
-                user_message="AI summary is temporarily rate limited. Please retry shortly.",
-                internal_message="NVIDIA rate limit hit during chat completion (429).",
-                status_code=503,
-            )
-
-        if response.status_code >= 500:
-            raise AISummaryServiceError(
-                user_message="The AI service is currently unavailable. Please try again later.",
-                internal_message=f"NVIDIA service unavailable during chat completion ({response.status_code}).",
-                status_code=503,
-            )
-
-        if response.status_code >= 400:
-            detail = self._extract_error_detail(response)
-            raise AISummaryServiceError(
-                user_message="The AI service rejected the summary request.",
-                internal_message=f"NVIDIA chat completion failed ({response.status_code}): {detail}",
-                status_code=502,
-            )
-
-        try:
-            body = response.json()
-        except ValueError as exc:
-            raise AISummaryServiceError(
-                user_message="The AI service returned an unexpected response.",
-                internal_message=f"NVIDIA chat completion returned invalid JSON: {response.text[:300]}",
-                status_code=502,
-            ) from exc
-
-        choices = body.get("choices") or []
-        if not choices:
-            raise AISummaryServiceError(
-                user_message="The AI service returned no summary output.",
-                internal_message="NVIDIA chat completion returned no response choices.",
-                status_code=502,
-            )
-
-        content = choices[0].get("message", {}).get("content")
-        if not content:
-            raise AISummaryServiceError(
-                user_message="The AI service returned an empty summary.",
-                internal_message="NVIDIA chat completion returned empty message content.",
-                status_code=502,
-            )
+        content = result.content
 
         try:
             payload_dict = extract_summary_payload(content)

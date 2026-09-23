@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import logging
 import re
 from typing import Any
 
@@ -9,8 +11,30 @@ import requests
 
 from app.core.config import get_settings
 from app.schemas.rag import Evidence, RAGResponse
+from app.services.ai_provider import ProviderCompletionError, complete_with_fallback, configured_providers
 from app.services.folder_repository import folder_repository
 from app.services.paper_repository import paper_repository
+
+
+logger = logging.getLogger(__name__)
+
+
+def _response_content(response: requests.Response) -> str:
+    content = []
+    for line in response.iter_lines(decode_unicode=True):
+        if not line or not line.startswith("data:"):
+            continue
+        data = line[5:].strip()
+        if data == "[DONE]":
+            break
+        try:
+            chunk = json.loads(data)
+        except json.JSONDecodeError:
+            continue
+        delta = ((chunk.get("choices") or [{}])[0].get("delta") or {}).get("content")
+        if isinstance(delta, str):
+            content.append(delta)
+    return "".join(content)
 
 
 class RAGServiceError(RuntimeError):
@@ -36,9 +60,9 @@ class SimpleRAGService:
         timeout_seconds: int | None = None,
     ):
         settings = get_settings()
-        self.model = model or settings.AI_MODEL
-        self.base_url = (base_url or settings.NVIDIA_BASE_URL).rstrip("/")
-        self.api_key = api_key or settings.NVIDIA_API_KEY
+        self.model = model or settings.GROQ_MODEL
+        self.base_url = (base_url or "").rstrip("/")
+        self.api_key = api_key
         self.timeout_seconds = timeout_seconds or 180
 
     def _retrieve_relevant_sections(
@@ -172,7 +196,6 @@ Provide a well-structured answer with clear citations."""
         # Build prompt and call LLM
         prompt = self._build_rag_prompt(query, retrieved, reasoning_depth)
         payload = {
-            "model": self.model,
             "messages": [
                 {
                     "role": "system",
@@ -182,71 +205,27 @@ Provide a well-structured answer with clear citations."""
             ],
             "temperature": temperature,
             "max_tokens": 800,
+            "stream": True,
+            "reasoning_effort": "low",
+            "chat_template_kwargs": {"clear_thinking": True},
         }
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-
-        if not self.api_key:
+        if not configured_providers(get_settings()):
             raise RAGServiceError(
                 user_message="The AI service is not configured. Please contact the administrator.",
-                internal_message="Missing NVIDIA_API_KEY in backend environment.",
+                internal_message="No AI provider API key and model are configured.",
                 status_code=503,
             )
 
         try:
-            response = requests.post(
-                f"{self.base_url}/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=self.timeout_seconds,
-            )
-        except requests.Timeout as exc:
-            raise RAGServiceError(
-                user_message="The AI service timed out. Please try again.",
-                internal_message=f"RAG LLM timed out: {exc}",
-                status_code=504,
-            ) from exc
-        except requests.RequestException as exc:
+            result = complete_with_fallback(payload, timeout_seconds=self.timeout_seconds)
+        except ProviderCompletionError as exc:
             raise RAGServiceError(
                 user_message="The AI service is unavailable. Please try again later.",
-                internal_message=f"RAG LLM request failed: {exc}",
+                internal_message=str(exc),
                 status_code=503,
             ) from exc
-
-        if response.status_code >= 400:
-            raise RAGServiceError(
-                user_message="The AI service failed to generate an answer.",
-                internal_message=f"RAG LLM returned {response.status_code}: {response.text[:300]}",
-                status_code=response.status_code,
-            )
-
-        try:
-            body = response.json()
-            choices = body.get("choices") or []
-            if not choices:
-                raise RAGServiceError(
-                    user_message="The AI service returned no answer.",
-                    internal_message="No response choices from RAG LLM.",
-                    status_code=502,
-                )
-            
-            answer = choices[0].get("message", {}).get("content", "").strip()
-            if not answer:
-                raise RAGServiceError(
-                    user_message="The AI service returned an empty answer.",
-                    internal_message="Empty content from RAG LLM response.",
-                    status_code=502,
-                )
-
-        except (ValueError, KeyError) as exc:
-            raise RAGServiceError(
-                user_message="The AI service returned an invalid response.",
-                internal_message=f"Failed to parse RAG LLM response: {exc}",
-                status_code=502,
-            ) from exc
+        answer = result.content
 
         # Build evidence list
         evidence = [

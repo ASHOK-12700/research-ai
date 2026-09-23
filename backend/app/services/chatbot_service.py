@@ -2,10 +2,39 @@
 
 from __future__ import annotations
 
+import json
+import logging
+
 import requests
 
 from app.core.config import get_settings
+from app.services.ai_provider import ProviderCompletionError, complete_with_fallback, configured_providers
 from app.schemas.rag import ChatMessage, ChatResponse
+
+
+logger = logging.getLogger(__name__)
+
+
+def _response_body(response: requests.Response) -> dict:
+    if not hasattr(response, "iter_lines"):
+        return response.json()
+
+    content = []
+    for line in response.iter_lines(decode_unicode=True):
+        if not line or not line.startswith("data:"):
+            continue
+        data = line[5:].strip()
+        if data == "[DONE]":
+            break
+        try:
+            chunk = json.loads(data)
+        except json.JSONDecodeError:
+            continue
+        delta = ((chunk.get("choices") or [{}])[0].get("delta") or {}).get("content")
+        if isinstance(delta, str):
+            content.append(delta)
+
+    return {"choices": [{"message": {"content": "".join(content)}}]}
 
 
 class ChatbotServiceError(RuntimeError):
@@ -30,9 +59,9 @@ class ChatbotService:
         timeout_seconds: int | None = None,
     ):
         settings = get_settings()
-        self.model = model or settings.CHATBOT_MODEL
-        self.base_url = (base_url or settings.CHATBOT_BASE_URL or "").rstrip("/")
-        self.api_key = api_key or settings.CHATBOT_API_KEY
+        self.model = model or settings.GROQ_MODEL
+        self.base_url = (base_url or "").rstrip("/")
+        self.api_key = api_key
         self.timeout_seconds = timeout_seconds or 180
 
     def _build_system_prompt(self) -> str:
@@ -164,20 +193,10 @@ Be helpful, accurate, and professional. If users need general technical help not
                 status_code=422,
             )
 
-        missing_settings = [
-            name
-            for name, value in (
-                ("CHATBOT_API_KEY", self.api_key),
-                ("CHATBOT_MODEL", self.model),
-                ("CHATBOT_BASE_URL", self.base_url),
-            )
-            if not value
-        ]
-        if missing_settings:
-            missing = ", ".join(missing_settings)
+        if not configured_providers(get_settings()):
             raise ChatbotServiceError(
                 user_message="The chatbot is not configured. Please contact the administrator.",
-                internal_message=f"Missing required chatbot settings: {missing}",
+                internal_message="No AI provider API key and model are configured.",
                 status_code=503,
             )
 
@@ -195,77 +214,26 @@ Be helpful, accurate, and professional. If users need general technical help not
             })
 
         payload = {
-            "model": self.model,
             "messages": api_messages,
             "temperature": temperature,
-            "max_tokens": 800,
-        }
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
+            "max_tokens": 256,
+            "stream": True,
+            "reasoning_effort": "low",
+            "chat_template_kwargs": {"clear_thinking": True},
         }
 
         try:
-            response = requests.post(
-                f"{self.base_url}/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=self.timeout_seconds,
-            )
-        except requests.Timeout as exc:
-            raise ChatbotServiceError(
-                user_message="The chatbot service timed out. Please try again.",
-                internal_message=f"Chatbot LLM timed out: {exc}",
-                status_code=504,
-            ) from exc
-        except requests.RequestException as exc:
+            result = complete_with_fallback(payload, timeout_seconds=self.timeout_seconds)
+        except ProviderCompletionError as exc:
             raise ChatbotServiceError(
                 user_message="The chatbot service is unavailable. Please try again later.",
-                internal_message=f"Chatbot LLM request failed: {exc}",
+                internal_message=str(exc),
                 status_code=503,
             ) from exc
 
-        if response.status_code >= 400:
-            raise ChatbotServiceError(
-                user_message="The chatbot service failed to generate a response.",
-                internal_message=f"Chatbot LLM returned {response.status_code}: {response.text[:300]}",
-                status_code=response.status_code,
-            )
-
-        try:
-            body = response.json()
-            choices = body.get("choices") or []
-            if not choices:
-                raise ChatbotServiceError(
-                    user_message="The chatbot service returned no response.",
-                    internal_message="No response choices from chatbot LLM.",
-                    status_code=502,
-                )
-            
-            message_content = choices[0].get("message", {}).get("content", "")
-            if not isinstance(message_content, str):
-                raise TypeError("Chatbot LLM message content was not a string.")
-            message_content = message_content.strip()
-            if not message_content:
-                raise ChatbotServiceError(
-                    user_message="The chatbot service returned an empty response.",
-                    internal_message="Empty content from chatbot LLM response.",
-                    status_code=502,
-                )
-
-            usage = body.get("usage")
-
-        except (AttributeError, TypeError, ValueError, KeyError) as exc:
-            raise ChatbotServiceError(
-                user_message="The chatbot service returned an invalid response.",
-                internal_message=f"Failed to parse chatbot LLM response: {exc}",
-                status_code=502,
-            ) from exc
-
         return ChatResponse(
-            message=ChatMessage(role="assistant", content=message_content),
-            usage=usage,
+            message=ChatMessage(role="assistant", content=result.content),
+            usage=result.usage,
         )
 
 

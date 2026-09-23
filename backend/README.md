@@ -56,28 +56,22 @@ Visit:
 
 http://localhost:8000/docs
 
-## 7. Optional: configure AI summarization
+## 7. Configure AI providers
 
-This project supports structured paper summarization through the NVIDIA NIM hosted API using an OpenAI-compatible request format.
+AI requests use the providers in this order: Groq, OpenRouter, then Mistral. If a configured provider times out, fails, or returns no content, the next provider is tried.
 
-Required environment variable:
-
-- `NVIDIA_API_KEY`
-
-Optional environment variables:
-
-- `AI_MODEL` (set this to the NVIDIA model configured in `backend/.env`)
-- `NVIDIA_BASE_URL` (default: `https://integrate.api.nvidia.com/v1`)
-
-Add them to a local `.env` file in the `backend` folder, for example:
+Set these variables in `backend/.env` or your deployment provider's secret settings:
 
 ```env
-NVIDIA_API_KEY=your_key_here
-AI_MODEL=your_nvidia_model
-NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
+GROQ_API_KEY=your_groq_key
+GROQ_MODEL=openai/gpt-oss-120b
+OPENROUTER_API_KEY=your_openrouter_key
+OPENROUTER_MODEL=deepseek/deepseek-chat:free
+MISTRAL_API_KEY=your_mistral_key
+MISTRAL_MODEL=mistral-medium-latest
 ```
 
-If no API key is configured, the summarization endpoint returns a clear configuration error and does not use any hardcoded key.
+At least one provider key and model must be configured. Never commit real API keys.
 
 ## 8. Test the health endpoint
 
