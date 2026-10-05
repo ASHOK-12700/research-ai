@@ -11,8 +11,9 @@ An AI-powered web app that turns a stack of research paper PDFs into structured 
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688?logo=fastapi&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-4169E1?logo=postgresql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?logo=postgresql&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Auth%20%26%20Storage-3ECF8E?logo=supabase&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 ---
 
@@ -39,24 +40,26 @@ Upload your papers, and ResearchAI parses them, detects their sections, and uses
 ## 🧠 How It Works
 
 ```
-PDF Upload → Text & Section Extraction (PyMuPDF) → Semantic Chunking
-          → Embeddings → Vector Store (PostgreSQL + pgvector)
-          → Semantic Retrieval → LLM Answer / Summary → Page-level Citations
+PDF Upload → Text & Section Extraction (PyMuPDF) → Retrieval of relevant passages
+          → LLM Answer / Summary (Groq → OpenRouter → Mistral fallback)
+          → Page-level Citations
 ```
 
 1. **Extract:** PyMuPDF pulls text, page numbers and section structure from each PDF.
-2. **Chunk and embed:** Content is split into semantic chunks and converted to vector embeddings.
-3. **Store:** Embeddings are saved in PostgreSQL using the `pgvector` extension.
-4. **Retrieve:** A query pulls the most relevant chunks via similarity search.
-5. **Generate:** The LLM answers using *only* the retrieved evidence, attaching the source page and section.
+2. **Store:** Papers, folders, projects and summaries are saved in Supabase (PostgreSQL), with PDFs kept in the backend `storage/papers/` folder.
+3. **Retrieve:** The most relevant passages for a question are selected from the chosen papers.
+4. **Generate:** The LLM answers using *only* the retrieved evidence and attaches the source page and section.
+
+> **Note:** Retrieval currently uses text matching. Vector embeddings with `pgvector` are the planned upgrade (see Future Scope).
 
 ## 🏗️ Architecture
 
-ResearchAI uses a layered client–server architecture:
+ResearchAI uses a client–server architecture:
 
-- **Frontend:** React 19 SPA (TypeScript, Vite, Tailwind CSS) in the browser
-- **Backend:** FastAPI REST API, split into PDF, AI/RAG and summary-generation services
-- **Data layer:** PostgreSQL + pgvector, with Supabase for authentication and file storage
+- **Frontend:** React 19 SPA (TypeScript, Vite, Tailwind CSS) at the repository root
+- **Backend:** FastAPI REST API in `backend/`, split into routes, schemas and services (PDF, RAG, AI provider, summaries, analysis, chatbot)
+- **Data layer:** Supabase for authentication and PostgreSQL storage; schema in `backend/app/supabase_schema.sql`
+- **AI layer:** LLM calls go through a provider chain, trying Groq first, then OpenRouter, then Mistral if a provider fails or times out
 
 ## 🛠️ Tech Stack
 
@@ -66,11 +69,11 @@ React 19 · TypeScript · Vite · Tailwind CSS · Framer Motion · React Router 
 **Backend**
 Python · FastAPI · Uvicorn · Pydantic / pydantic-settings · PyMuPDF · python-multipart · Supabase Python SDK
 
-**Database & Storage**
-PostgreSQL · pgvector · Supabase (Auth, Database, Storage)
+**Database & Auth**
+Supabase (PostgreSQL, Auth with Google OAuth)
 
 **AI**
-Embedding model + Large Language Model accessed via API (RAG pipeline)
+Groq, OpenRouter and Mistral LLM APIs with automatic fallback
 
 **Testing & Tooling**
 pytest · oxlint · Swagger UI (via FastAPI) · Git & GitHub
@@ -78,14 +81,58 @@ pytest · oxlint · Swagger UI (via FastAPI) · Git & GitHub
 **Deployment**
 Vercel (frontend) · cloud-hosted backend and database
 
+## 📁 Project Structure
+
+```
+research-ai/
+├── backend/
+│   ├── app/
+│   │   ├── api/routes/          # chatbot, folders, health, papers, preferences, projects, rag
+│   │   ├── core/                # config.py (settings & env loading)
+│   │   ├── models/
+│   │   ├── schemas/             # Pydantic models (papers, folders, projects, rag, summaries, analysis)
+│   │   ├── services/            # ai_provider, ai_summary, chatbot, paper_analysis,
+│   │   │                        # pdf, rag, repositories, supabase client
+│   │   ├── utils/
+│   │   ├── main.py              # FastAPI entry point
+│   │   └── supabase_schema.sql  # Database schema
+│   ├── storage/papers/          # Uploaded PDFs (local)
+│   ├── tests/                   # pytest: summaries, upload validation, user isolation
+│   ├── .env.example
+│   └── requirements.txt
+├── src/
+│   ├── components/
+│   │   ├── auth/                # Login scene, protected routes, redirects
+│   │   ├── layout/              # AppLayout, Header, Sidebar, MobileDrawer, evidence drawer
+│   │   ├── search/              # Command palette
+│   │   ├── timeline/            # Activity & research timelines
+│   │   ├── ui/                  # Button, Card, Modal, Tabs, Copilot, etc.
+│   │   └── upload/              # Drag-and-drop upload modal
+│   ├── contexts/                # AuthContext
+│   ├── hooks/                   # useTheme, useToast, useStatsCounter
+│   ├── pages/                   # Dashboard, Papers, Folders, Projects, Compare, AskPapers,
+│   │                            # ResearchGaps, Summary, Settings, Login/Signup, Help
+│   ├── services/                # API clients (paper, folder, project, rag, chat, gaps)
+│   ├── shaders/ · styles/ · types/ · utils/
+│   ├── App.tsx                  # Routes
+│   └── main.tsx
+├── public/                      # Favicon and icons
+├── .env.example                 # Frontend env template
+├── index.html
+├── package.json
+├── vite.config.ts
+├── vercel.json                  # SPA rewrite rules for Vercel
+└── LICENSE
+```
+
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js (LTS) and npm
-- Python 3.x
-- A Supabase project with the `pgvector` extension enabled
-- API keys for your chosen embedding model and LLM provider
+- Python 3.10+
+- A [Supabase](https://supabase.com/) project
+- At least one LLM API key: [Groq](https://console.groq.com/), [OpenRouter](https://openrouter.ai/) or [Mistral](https://console.mistral.ai/)
 
 ### 1. Clone the repository
 
@@ -94,50 +141,79 @@ git clone https://github.com/<your-username>/<your-repo>.git
 cd <your-repo>
 ```
 
-### 2. Backend setup
+### 2. Set up the database
+
+Open the Supabase SQL editor and run `backend/app/supabase_schema.sql`. Enable Google under Authentication → Providers if you want Google login.
+
+### 3. Backend setup
 
 ```bash
-cd backend                      # adjust to your folder name
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+cd backend
+python -m venv .venv
+source .venv/bin/activate        # Windows: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-cp .env.example .env            # then fill in your keys (see below)
-
-uvicorn main:app --reload       # adjust to your entry module
+cp .env.example .env             # Windows: Copy-Item .env.example .env
+uvicorn app.main:app --reload --port 8000
 ```
 
-The API runs at `http://localhost:8000`, and interactive Swagger docs are at `http://localhost:8000/docs`.
+- API: `http://localhost:8000`
+- Swagger docs: `http://localhost:8000/docs`
+- Health check: `http://localhost:8000/api/health`
 
-### 3. Frontend setup
+### 4. Frontend setup
+
+From the repository root:
 
 ```bash
-cd frontend                     # adjust to your folder name
 npm install
+cp .env.example .env
 npm run dev
 ```
 
 The app runs at `http://localhost:5173`.
 
-### 4. Environment variables
+### 5. Environment variables
 
-Copy `.env.example` to `.env` in each part of the project and fill in your values. Typical settings include:
+**Backend (`backend/.env`)**
 
 ```env
-# Backend
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_KEY=your_supabase_service_key
-DATABASE_URL=your_postgres_connection_string
-LLM_API_KEY=your_llm_api_key
-EMBEDDING_API_KEY=your_embedding_api_key
+APP_NAME=ResearchAI
+APP_VERSION=1.0.0
+API_PREFIX=/api
+FRONTEND_URL=http://localhost:5173
+ENVIRONMENT=development
 
-# Frontend
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_API_URL=http://localhost:8000
+# AI providers, tried in order: Groq → OpenRouter → Mistral (at least one key required)
+GROQ_API_KEY=
+GROQ_MODEL=openai/gpt-oss-120b
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=deepseek/deepseek-chat
+MISTRAL_API_KEY=
+MISTRAL_MODEL=mistral-medium-latest
+
+# Supabase
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-> ⚠️ Never commit your `.env` file. Use `.env.example` to document required variables.
+**Frontend (`.env`)**
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+> ⚠️ Never commit `.env` files or API keys. The service-role key in particular must stay on the backend only.
+
+### Other scripts
+
+```bash
+npm run build     # type-check and build for production
+npm run lint      # run oxlint
+```
 
 ## 🧪 Running Tests
 
@@ -177,18 +253,18 @@ pytest
 
 - Supports text-based (digitally native) PDFs only; scanned/image-only PDFs are not yet supported.
 - Section detection can be imperfect for unusual or multi-column layouts.
-- Requires an internet connection for the LLM, embedding API and Supabase.
+- Requires an internet connection for the LLM APIs and Supabase.
 - Research-gap suggestions are a starting point for human investigation, not a final judgement.
 
 ## 🔮 Future Scope
 
+- [ ] Vector embeddings and semantic search with `pgvector`
 - [ ] OCR support for scanned papers
 - [ ] Citation-network analysis and visualisation
 - [ ] Cross-database search (Semantic Scholar, arXiv)
 - [ ] Duplicate and similar-paper detection
 - [ ] Collaborative, multi-user workspaces
 - [ ] Companion mobile app
-
 
 ## 📚 References
 
@@ -197,4 +273,4 @@ pytest
 
 ## 📄 License
 
-This project was developed for academic purposes. Add a license of your choice (e.g., MIT) here.
+This project is licensed under the [MIT License](LICENSE).
